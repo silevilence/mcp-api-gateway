@@ -2,7 +2,8 @@
 // 节点表单 · 创建/编辑
 // ============================================================
 import React, { useState } from 'react';
-import { styles } from '../styles.js';
+import { createPortal } from 'react-dom';
+import { layout } from '../styles.js';
 import { FieldHint } from './FieldHint.js';
 import { ParamEditor } from './ParamEditor.js';
 import type { ApiNode, HttpMethod, ApiParam } from '@shared/types.js';
@@ -30,59 +31,47 @@ export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, o
     e.preventDefault();
     if (!name.trim() || !path.trim()) return;
 
-    if (isEdit) {
-      const data: Record<string, unknown> = {
-        name: name.trim(),
-        description: description.trim(),
-        method,
-        path: path.trim(),
-        params,
-        group: group.trim() || undefined,
-        remark: remark.trim() || undefined,
-      };
-      onSubmit(data);
-    } else {
-      const data: Record<string, unknown> = {
-        projectId,
-        name: name.trim(),
-        description: description.trim(),
-        method,
-        path: path.trim(),
-        params,
-        group: group.trim() || undefined,
-        remark: remark.trim() || undefined,
-      };
-      onSubmit(data);
-    }
+    const data: Record<string, unknown> = {
+      name: name.trim(), description: description.trim(),
+      method, path: path.trim(), params,
+      group: group.trim() || undefined,
+      remark: remark.trim() || undefined,
+    };
+    if (!isEdit) data.projectId = projectId;
+    onSubmit(data);
   };
 
-  return (
-    <div style={styles.modal} onClick={onCancel}>
-      <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ margin: '0 0 20px 0', fontSize: 18 }}>
+  return createPortal(
+    <div style={layout.modalOverlay} onClick={onCancel}>
+      <div style={layout.modalContent} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ margin: '0 0 24px 0', fontSize: 18, fontWeight: 700 }}>
           {isEdit ? '编辑 API 节点' : '新建 API 节点'}
         </h3>
         {isOpenApi && (
-          <div style={{ padding: '8px 12px', background: '#fef3c7', borderRadius: 6, marginBottom: 16, fontSize: 13, color: '#92400e' }}>
+          <div style={{
+            padding: '10px 14px', background: 'var(--warning-soft)',
+            borderRadius: 'var(--radius-md)', marginBottom: 20,
+            fontSize: 13, color: 'var(--warning)', border: '1px solid var(--warning)',
+          }}>
             OpenAPI 托管节点：接口地址 / 方法 / 参数不可修改，仅可编辑备注和分组。
           </div>
         )}
         <form onSubmit={handleSubmit}>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>
-              名称 <span style={{ color: '#dc2626' }}>*</span>
+          <div style={layout.formGroup}>
+            <label style={layout.label}>
+              名称 <span style={{ color: 'var(--danger)' }}>*</span>
               <FieldHint text="给这个接口起一个便于识别的名称，例如「获取用户列表」" />
             </label>
-            <input style={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：获取用户列表" autoFocus />
+            <input style={layout.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：获取用户列表" autoFocus />
           </div>
-          <div style={{ ...styles.flexRow, gap: 12 }}>
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>
-                方法 <span style={{ color: '#dc2626' }}>*</span>
-                <FieldHint text="HTTP 请求方法：GET 获取数据、POST 创建数据、PUT 全量更新、PATCH 部分更新、DELETE 删除" />
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ ...layout.formGroup, flex: 1 }}>
+              <label style={layout.label}>
+                方法 <span style={{ color: 'var(--danger)' }}>*</span>
+                <FieldHint text="HTTP 请求方法：GET 获取、POST 创建、PUT 更新、DELETE 删除" />
               </label>
               <select
-                style={styles.select}
+                style={layout.select}
                 value={method}
                 onChange={(e) => setMethod(e.target.value as HttpMethod)}
                 disabled={isOpenApi}
@@ -94,13 +83,13 @@ export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, o
                 <option value="PATCH">PATCH</option>
               </select>
             </div>
-            <div style={{ ...styles.formGroup, flex: 2 }}>
-              <label style={styles.label}>
-                接口地址 <span style={{ color: '#dc2626' }}>*</span>
-                <FieldHint text="完整的接口 URL，从 http:// 或 https:// 开始，例如 https://api.example.com/v1/users" />
+            <div style={{ ...layout.formGroup, flex: 2 }}>
+              <label style={layout.label}>
+                接口地址 <span style={{ color: 'var(--danger)' }}>*</span>
+                <FieldHint text="完整的接口 URL，例如 https://api.example.com/v1/users" />
               </label>
               <input
-                style={styles.input}
+                style={layout.input}
                 value={path}
                 onChange={(e) => setPath(e.target.value)}
                 placeholder="https://api.example.com/v1/users"
@@ -108,44 +97,41 @@ export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, o
               />
             </div>
           </div>
-          <div style={styles.formGroup}>
-            <label style={styles.label}>
+          <div style={layout.formGroup}>
+            <label style={layout.label}>
               描述
               <FieldHint text="简要说明这个接口的用途和业务含义" />
             </label>
-            <textarea style={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="接口的用途和说明" />
+            <textarea style={layout.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="接口的用途和说明" />
           </div>
-          <div style={styles.formGroup}>
-            <ParamEditor
-              params={params}
-              onChange={setParams}
-              disabled={isOpenApi}
-            />
+          <div style={layout.formGroup}>
+            <ParamEditor params={params} onChange={setParams} disabled={isOpenApi} />
           </div>
-          <div style={{ ...styles.flexRow, gap: 12 }}>
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ ...layout.formGroup, flex: 1 }}>
+              <label style={layout.label}>
                 分组
-                <FieldHint text="给接口打上分组标签，方便在列表中按组筛选，例如「用户管理」「订单系统」" />
+                <FieldHint text="给接口打上分组标签，方便在列表中按组筛选" />
               </label>
-              <input style={styles.input} value={group} onChange={(e) => setGroup(e.target.value)} placeholder="例如：用户管理" />
+              <input style={layout.input} value={group} onChange={(e) => setGroup(e.target.value)} placeholder="例如：用户管理" />
             </div>
-            <div style={{ ...styles.formGroup, flex: 1 }}>
-              <label style={styles.label}>
+            <div style={{ ...layout.formGroup, flex: 1 }}>
+              <label style={layout.label}>
                 备注
                 <FieldHint text="额外的备忘信息，仅自己可见" />
               </label>
-              <input style={styles.input} value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="附加备注" />
+              <input style={layout.input} value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="附加备注" />
             </div>
           </div>
-          <div style={{ ...styles.flexRow, justifyContent: 'flex-end', marginTop: 20 }}>
-            <button type="button" style={styles.btn} onClick={onCancel}>取消</button>
-            <button type="submit" style={{ ...styles.btn, ...styles.btnPrimary }} disabled={!name.trim() || !path.trim()}>
+          <div style={{ ...layout.flexRow, justifyContent: 'flex-end', marginTop: 24, gap: 12 }}>
+            <button type="button" style={layout.btn} onClick={onCancel}>取消</button>
+            <button type="submit" style={{ ...layout.btn, ...layout.btnPrimary }} disabled={!name.trim() || !path.trim()}>
               {isEdit ? '保存' : '创建'}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

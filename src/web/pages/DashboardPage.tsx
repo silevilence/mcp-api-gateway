@@ -2,7 +2,7 @@
 // 核心工作台页面 · 全局看板
 // ============================================================
 import React, { useEffect, useState } from 'react';
-import { styles } from '../styles.js';
+import { layout } from '../styles.js';
 import { projectsApi, nodesApi, healthApi } from '../apiClient.js';
 import { AuditLogViewer } from '../components/AuditLogViewer.js';
 import type { ApiProject, ApiNode } from '../../shared/types.js';
@@ -13,11 +13,19 @@ interface HealthStatus {
   timestamp: string;
 }
 
+const statCards = [
+  { key: 'projects', label: '项目总数', icon: '⊞', color: 'var(--accent)' },
+  { key: 'nodes', label: '活跃节点', icon: '⬡', color: 'var(--success)' },
+  { key: 'custom', label: '自定义项目', icon: '⚙', color: 'var(--purple)' },
+  { key: 'openapi', label: 'OpenAPI 项目', icon: '☰', color: 'var(--warning)' },
+];
+
 export const DashboardPage: React.FC = () => {
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [projects, setProjects] = useState<ApiProject[]>([]);
   const [nodes, setNodes] = useState<ApiNode[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -29,6 +37,7 @@ export const DashboardPage: React.FC = () => {
         setHealth(h);
         setProjects(p);
         setNodes(n);
+        setLoaded(true);
       })
       .catch((err: Error) => setError(err.message));
   }, []);
@@ -37,46 +46,68 @@ export const DashboardPage: React.FC = () => {
   const customProjects = projects.filter((p) => p.type === 'custom');
   const openapiProjects = projects.filter((p) => p.type === 'openapi');
 
+  const stats: Record<string, number> = {
+    projects: projects.length,
+    nodes: visibleNodes.length,
+    custom: customProjects.length,
+    openapi: openapiProjects.length,
+  };
+
   return (
     <div>
-      <h1 style={{ fontSize: 24, fontWeight: 700, margin: '0 0 24px 0' }}>工作台</h1>
+      <h1 style={layout.pageTitle}>工作台</h1>
+      <p style={layout.pageSubtitle}>API 网关运行概览与系统状态监控</p>
 
       {error && (
-        <div style={{ padding: '12px 16px', background: '#fee2e2', borderRadius: 8, marginBottom: 16, color: '#991b1b', fontSize: 14 }}>
+        <div style={{
+          padding: '12px 16px', background: 'var(--danger-soft)',
+          borderRadius: 'var(--radius-md)', marginBottom: 24,
+          color: 'var(--danger)', fontSize: 13, border: '1px solid var(--danger)',
+        }}>
           连接失败：{error}
         </div>
       )}
 
       {/* 统计卡片 */}
-      <div style={styles.statsGrid}>
-        <div style={styles.statCard}>
-          <div style={styles.statValue}>{projects.length}</div>
-          <div style={styles.statLabel}>项目总数</div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statValue}>{visibleNodes.length}</div>
-          <div style={styles.statLabel}>活跃节点</div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statValue}>{customProjects.length}</div>
-          <div style={styles.statLabel}>自定义项目</div>
-        </div>
-        <div style={styles.statCard}>
-          <div style={styles.statValue}>{openapiProjects.length}</div>
-          <div style={styles.statLabel}>OpenAPI 项目</div>
-        </div>
+      <div style={layout.statsGrid}>
+        {statCards.map((sc, i) => (
+          <div
+            key={sc.key}
+            style={{
+              ...layout.statCard,
+              animation: loaded ? `fadeInUp 0.3s ease ${i * 0.08}s both` : undefined,
+            }}
+          >
+            <div style={{
+              position: 'absolute', top: 0, left: 0, right: 0, height: 3,
+              background: sc.color, borderRadius: 'var(--radius-lg) var(--radius-lg) 0 0',
+            }} />
+            <div style={layout.statIcon}>{sc.icon}</div>
+            <div style={layout.statValue}>{stats[sc.key]}</div>
+            <div style={layout.statLabel}>{sc.label}</div>
+          </div>
+        ))}
       </div>
 
       {/* 系统状态 */}
       {health && (
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>系统状态</h3>
-          <div style={{ display: 'flex', gap: 24, fontSize: 14 }}>
-            <span>
-              状态：<span style={{ ...styles.badge, ...styles.badgeGreen }}>{health.status}</span>
+        <div style={layout.card}>
+          <h3 style={{ fontSize: 15, fontWeight: 600, marginBottom: 14 }}>系统状态</h3>
+          <div style={{ display: 'flex', gap: 32, fontSize: 13, flexWrap: 'wrap' }}>
+            <span style={layout.flexRow}>
+              <span style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: health.status === 'ok' ? 'var(--success)' : 'var(--danger)',
+                display: 'inline-block',
+              }} />
+              状态：<span style={{ ...layout.badge, ...layout.badgeGreen }}>{health.status}</span>
             </span>
-            <span>运行时间：{Math.floor(health.uptime)}s</span>
-            <span>检查时间：{health.timestamp}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              运行时间：<span style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{Math.floor(health.uptime)}s</span>
+            </span>
+            <span style={{ color: 'var(--text-secondary)' }}>
+              检查时间：<span style={{ color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>{health.timestamp}</span>
+            </span>
           </div>
         </div>
       )}

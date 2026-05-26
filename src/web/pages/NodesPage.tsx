@@ -2,7 +2,7 @@
 // API 节点管理页面 · 列表 + CRUD + 归档/反归档
 // ============================================================
 import React, { useEffect, useState, useCallback } from 'react';
-import { styles, methodStyle } from '../styles.js';
+import { layout, methodStyle } from '../styles.js';
 import { nodesApi } from '../apiClient.js';
 import { NodeForm } from '../components/NodeForm.js';
 import { OpenApiImport } from '../components/OpenApiImport.js';
@@ -99,109 +99,133 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
 
   const sourceBadge = (source: string) =>
     source === 'openapi'
-      ? { ...styles.badge, ...styles.badgeBlue, children: 'OpenAPI' }
-      : { ...styles.badge, ...styles.badgeGreen, children: '自定义' };
+      ? { ...layout.badge, ...layout.badgePurple, children: 'OpenAPI' }
+      : { ...layout.badge, ...layout.badgeGreen, children: '自定义' };
 
   return (
     <div>
-      <div style={styles.header}>
-        <div style={styles.flexRow}>
-          <button style={styles.btn} onClick={onBack}>← 返回项目列表</button>
-          <h1 style={styles.title}>{project.name} · API 节点</h1>
-          <span style={{ color: '#6b7280', fontSize: 14 }}>
-            ({visibleNodes.length} 个活跃{hiddenCount > 0 ? `，${hiddenCount} 个已归档` : ''})
-          </span>
+      <div style={layout.cardHeader}>
+        <div style={layout.flexRow}>
+          <button style={{ ...layout.btn, ...layout.btnSmall }} onClick={onBack}>
+            ← 返回
+          </button>
+          <div>
+            <h1 style={{ ...layout.pageTitle, fontSize: 22, marginBottom: 0 }}>
+              {project.name}
+            </h1>
+            <span style={layout.textSecondary}>
+              {visibleNodes.length} 个活跃{hiddenCount > 0 ? `，${hiddenCount} 个已归档` : ''}
+            </span>
+          </div>
         </div>
-        <div style={styles.flexRow}>
-          <label style={{ ...styles.flexRow, fontSize: 13, color: '#6b7280', cursor: 'pointer' }}>
+        <div style={layout.flexRow}>
+          <label style={{ ...layout.flexRow, fontSize: 13, color: 'var(--text-secondary)', cursor: 'pointer', gap: 6 }}>
             <input
               type="checkbox"
               checked={showHidden}
               onChange={(e) => setShowHidden(e.target.checked)}
-              style={{ marginRight: 4 }}
             />
             显示已归档
           </label>
           {project.type === 'openapi' && (
-            <button style={styles.btn} onClick={() => setShowImport(true)}>
+            <button style={layout.btn} onClick={() => setShowImport(true)}>
               导入 OpenAPI
             </button>
           )}
-          <button style={{ ...styles.btn, ...styles.btnPrimary }} onClick={() => setShowForm(true)}>
-            + 新建节点
-          </button>
+          {project.type === 'custom' && (
+            <button style={{ ...layout.btn, ...layout.btnPrimary }} onClick={() => setShowForm(true)}>
+              + 新建节点
+            </button>
+          )}
         </div>
       </div>
 
       {project.description && (
-        <p style={{ color: '#6b7280', fontSize: 14, marginBottom: 16 }}>{project.description}</p>
+        <p style={{ ...layout.textSecondary, marginBottom: 16, marginTop: -12 }}>{project.description}</p>
       )}
 
       {loading ? (
-        <p style={{ color: '#9ca3af' }}>加载中…</p>
+        <div style={layout.emptyState}>
+          <div className="skeleton" style={{ width: '60%', height: 20, margin: '0 auto 8px' }} />
+          <div className="skeleton" style={{ width: '40%', height: 16, margin: '0 auto' }} />
+        </div>
       ) : visibleNodes.length === 0 ? (
-        <div style={{ ...styles.card, textAlign: 'center', padding: 48 }}>
-          <p style={{ color: '#9ca3af', marginBottom: 16 }}>
-            {showHidden ? '暂无节点' : '暂无活跃节点，点击上方按钮创建或导入'}
+        <div style={{ ...layout.card, ...layout.emptyState }}>
+          <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>⬡</div>
+          <p style={{ marginBottom: 8 }}>
+            {showHidden ? '暂无节点' : '暂无活跃节点'}
+          </p>
+          <p style={layout.textMuted}>
+            {project.type === 'openapi' ? '点击上方按钮导入 OpenAPI 文档' : '点击上方按钮创建第一个 API 节点'}
           </p>
         </div>
       ) : (
-        <div style={styles.card}>
-          <table style={styles.table}>
+        <div style={layout.card}>
+          <table style={layout.table}>
             <thead>
               <tr>
-                <th style={{ ...styles.th, width: 60 }}>方法</th>
-                <th style={styles.th}>名称</th>
-                <th style={styles.th}>接口地址</th>
-                <th style={styles.th}>来源</th>
-                <th style={styles.th}>分组</th>
-                <th style={styles.th}>备注</th>
-                <th style={{ ...styles.th, textAlign: 'right' }}>操作</th>
+                <th style={{ ...layout.th, width: 60 }}>方法</th>
+                <th style={layout.th}>名称 / 路径</th>
+                <th style={layout.th}>来源</th>
+                <th style={layout.th}>分组</th>
+                <th style={layout.th}>备注</th>
+                <th style={{ ...layout.th, textAlign: 'right' }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {visibleNodes.map((n) => (
-                <tr key={n.id} style={n.hidden ? styles.hiddenRow : undefined}>
-                  <td style={styles.td}>
-                    <span style={{ ...methodStyle(n.method), fontSize: 13 }}>{n.method}</span>
+                <tr key={n.id} style={n.hidden ? layout.hiddenRow : undefined}>
+                  <td style={layout.td}>
+                    <span style={{ ...methodStyle(n.method), fontSize: 12 }}>{n.method}</span>
                   </td>
-                  <td style={styles.td}>
-                    <span style={{ fontWeight: 500 }}>{n.name}</span>
+                  <td style={layout.td}>
+                    <div style={{ fontWeight: 500 }}>{n.name}</div>
+                    <code style={{
+                      fontSize: 11, background: 'var(--bg-input)', padding: '2px 6px',
+                      borderRadius: 4, color: 'var(--text-muted)',
+                      maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap', display: 'inline-block',
+                    }}>
+                      {n.path}
+                    </code>
                     {n.description && (
-                      <span style={{ color: '#9ca3af', fontSize: 12, marginLeft: 8 }}>{n.description}</span>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {n.description}
+                      </div>
                     )}
                   </td>
-                  <td style={styles.td}>
-                    <code style={{ fontSize: 12, background: '#f3f4f6', padding: '2px 6px', borderRadius: 4, maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block', verticalAlign: 'middle' }}>{n.path}</code>
+                  <td style={layout.td}><span style={sourceBadge(n.source)} /></td>
+                  <td style={layout.td}>
+                    {n.group ? <span style={layout.tag}>{n.group}</span> : <span style={layout.textMuted}>—</span>}
                   </td>
-                  <td style={styles.td}><span style={sourceBadge(n.source)} /></td>
-                  <td style={styles.td}><span style={{ fontSize: 13, color: '#6b7280' }}>{n.group || '-'}</span></td>
-                  <td style={styles.td}><span style={{ fontSize: 13, color: '#6b7280' }}>{n.remark || '-'}</span></td>
-                  <td style={{ ...styles.td, textAlign: 'right' }}>
-                    <div style={{ ...styles.flexRow, justifyContent: 'flex-end' }}>
+                  <td style={layout.td}>
+                    <span style={layout.textSecondary}>{n.remark || '—'}</span>
+                  </td>
+                  <td style={{ ...layout.td, textAlign: 'right' }}>
+                    <div style={{ ...layout.flexRow, justifyContent: 'flex-end' }}>
                       <button
-                        style={{ ...styles.btn, ...styles.btnSmall }}
+                        style={{ ...layout.btn, ...layout.btnSmall }}
                         onClick={() => setEditingNode(n)}
                       >
                         编辑
                       </button>
                       {n.hidden ? (
                         <button
-                          style={{ ...styles.btn, ...styles.btnSmall }}
+                          style={{ ...layout.btn, ...layout.btnSmall }}
                           onClick={() => handleUnarchive(n.id)}
                         >
                           取消归档
                         </button>
                       ) : (
                         <button
-                          style={{ ...styles.btn, ...styles.btnSmall }}
+                          style={{ ...layout.btn, ...layout.btnSmall }}
                           onClick={() => handleArchive(n.id)}
                         >
                           归档
                         </button>
                       )}
                       <button
-                        style={{ ...styles.btn, ...styles.btnSmall, ...styles.btnDanger }}
+                        style={{ ...layout.btn, ...layout.btnSmall, ...layout.btnDanger }}
                         onClick={() => setDeletingId(n.id)}
                       >
                         删除
@@ -216,20 +240,11 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
       )}
 
       {showForm && (
-        <NodeForm
-          projectId={project.id}
-          onSubmit={handleCreate}
-          onCancel={() => setShowForm(false)}
-        />
+        <NodeForm projectId={project.id} onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
       )}
 
       {editingNode && (
-        <NodeForm
-          projectId={project.id}
-          node={editingNode}
-          onSubmit={handleUpdate}
-          onCancel={() => setEditingNode(null)}
-        />
+        <NodeForm projectId={project.id} node={editingNode} onSubmit={handleUpdate} onCancel={() => setEditingNode(null)} />
       )}
 
       {deletingId && (
@@ -246,10 +261,7 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
       {showImport && (
         <OpenApiImport
           projectId={project.id}
-          onDone={() => {
-            setShowImport(false);
-            fetchNodes();
-          }}
+          onDone={() => { setShowImport(false); fetchNodes(); }}
           onCancel={() => setShowImport(false)}
         />
       )}

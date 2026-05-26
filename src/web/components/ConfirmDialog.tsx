@@ -2,7 +2,8 @@
 // 确认弹窗组件
 // ============================================================
 import React from 'react';
-import { styles } from '../styles.js';
+import { createPortal } from 'react-dom';
+import { layout } from '../styles.js';
 
 interface ConfirmDialogProps {
   title: string;
@@ -21,18 +22,22 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
 }) => {
-  return (
-    <div style={styles.modal} onClick={onCancel}>
-      <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ margin: '0 0 12px 0', fontSize: 18 }}>{title}</h3>
-        <p style={{ color: '#6b7280', marginBottom: 20 }}>{message}</p>
-        <div style={{ ...styles.flexRow, justifyContent: 'flex-end' }}>
-          <button style={styles.btn} onClick={onCancel}>取消</button>
+  return createPortal(
+    <div style={layout.modalOverlay} onClick={onCancel}>
+      <div style={{ ...layout.modalContent, minWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+        <div style={{ fontSize: 32, marginBottom: 12, textAlign: 'center', opacity: 0.6 }}>
+          {danger ? '⚠' : 'ℹ'}
+        </div>
+        <h3 style={{ margin: '0 0 8px 0', fontSize: 18, textAlign: 'center' }}>{title}</h3>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 24, textAlign: 'center', fontSize: 14 }}>
+          {message}
+        </p>
+        <div style={{ ...layout.flexRow, justifyContent: 'center', gap: 12 }}>
+          <button style={layout.btn} onClick={onCancel}>取消</button>
           <button
             style={{
-              ...styles.btn,
-              ...styles.btnPrimary,
-              ...(danger ? styles.btnDanger : {}),
+              ...layout.btn,
+              ...(danger ? layout.btnDanger : layout.btnPrimary),
             }}
             onClick={onConfirm}
           >
@@ -40,6 +45,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

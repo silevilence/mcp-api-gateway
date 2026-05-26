@@ -14,37 +14,25 @@ interface ParamEditorProps {
 const PARAM_TYPES: ParamType[] = ['string', 'number', 'integer', 'boolean', 'date', 'object', 'array'];
 const PARAM_LOCATIONS: ParamLocation[] = ['query', 'path', 'body', 'formData'];
 
-const cell: React.CSSProperties = { padding: '0 4px 0 0' };
+const cellCss: React.CSSProperties = { padding: '0 4px 0 0' };
 const miniInput: React.CSSProperties = {
-  width: '100%',
-  padding: '5px 8px',
-  borderRadius: 4,
-  border: '1px solid #d1d5db',
-  fontSize: 12,
-  boxSizing: 'border-box',
+  width: '100%', padding: '5px 8px', borderRadius: 4,
+  border: '1px solid var(--border-default)', fontSize: 12,
+  background: 'var(--bg-input)', color: 'var(--text-primary)',
 };
 const miniSelect: React.CSSProperties = {
-  ...miniInput,
-  background: '#fff',
+  ...miniInput, cursor: 'pointer',
 };
 const addBtn: React.CSSProperties = {
-  padding: '5px 14px',
-  borderRadius: 4,
-  border: '1px dashed #9ca3af',
-  background: 'none',
-  cursor: 'pointer',
-  fontSize: 12,
-  color: '#6b7280',
-  marginTop: 8,
+  padding: '5px 14px', borderRadius: 4,
+  border: '1px dashed var(--border-default)',
+  background: 'transparent', cursor: 'pointer',
+  fontSize: 12, color: 'var(--text-muted)', marginTop: 8,
 };
 const delBtn: React.CSSProperties = {
-  padding: '4px 8px',
-  borderRadius: 4,
-  border: 'none',
-  background: '#fee2e2',
-  color: '#dc2626',
-  cursor: 'pointer',
-  fontSize: 12,
+  padding: '4px 8px', borderRadius: 4, border: 'none',
+  background: 'var(--danger-soft)', color: 'var(--danger)',
+  cursor: 'pointer', fontSize: 12,
 };
 
 function blankParam(): ApiParam {
@@ -72,22 +60,31 @@ export const ParamEditor: React.FC<ParamEditorProps> = ({ params, onChange, disa
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#374151' }}>参数定义</span>
-        <FieldHint text="定义接口的请求参数：参数名、数据类型、传递位置（query/path/body/formData）、是否必填" />
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>参数定义</span>
+        <FieldHint text="定义接口的请求参数：参数名、数据类型、传递位置、是否必填" />
       </div>
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: 6, padding: '8px 10px', background: '#fafafa' }}>
-        {/* 表头 */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 6, fontSize: 11, color: '#9ca3af', fontWeight: 500 }}>
-          <span style={{ flex: 3, padding: '0 4px' }}>参数名</span>
-          <span style={{ flex: 2, padding: '0 4px' }}>类型</span>
-          <span style={{ flex: 2, padding: '0 4px' }}>位置</span>
-          <span style={{ width: 48, textAlign: 'center' }}>必填</span>
+      <div style={{
+        border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)',
+        padding: '10px 12px', background: 'var(--bg-input)',
+      }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 6, fontSize: 11, color: 'var(--text-muted)', fontWeight: 500 }}>
+          <span style={{ flex: 3, padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+            参数名<FieldHint text="接口文档中的参数键名，例如 userId、pageSize" />
+          </span>
+          <span style={{ flex: 2, padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+            类型<FieldHint text="参数的数据类型约束：string（字符串）、number（数字）、integer（整数）、boolean（布尔）、date（日期）、object（对象）、array（数组）" />
+          </span>
+          <span style={{ flex: 2, padding: '0 4px', display: 'flex', alignItems: 'center' }}>
+            位置<FieldHint text="参数在 HTTP 请求中的传递方式：query（URL 查询参数）、path（路径变量）、body（请求体 JSON）、formData（表单数据）" />
+          </span>
+          <span style={{ width: 48, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            必填<FieldHint text="勾选后此参数为必传项，调用时不可省略" />
+          </span>
           <span style={{ width: 44 }} />
         </div>
-        {/* 数据行 */}
         {rows.map((p, i) => (
           <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center', marginBottom: 4 }}>
-            <div style={{ ...cell, flex: 3 }}>
+            <div style={{ ...cellCss, flex: 3 }}>
               <input
                 style={miniInput}
                 placeholder="参数名"
@@ -96,7 +93,7 @@ export const ParamEditor: React.FC<ParamEditorProps> = ({ params, onChange, disa
                 disabled={disabled}
               />
             </div>
-            <div style={{ ...cell, flex: 2 }}>
+            <div style={{ ...cellCss, flex: 2 }}>
               <select
                 style={miniSelect}
                 value={p.type}
@@ -108,7 +105,7 @@ export const ParamEditor: React.FC<ParamEditorProps> = ({ params, onChange, disa
                 ))}
               </select>
             </div>
-            <div style={{ ...cell, flex: 2 }}>
+            <div style={{ ...cellCss, flex: 2 }}>
               <select
                 style={miniSelect}
                 value={p.location}
@@ -126,7 +123,7 @@ export const ParamEditor: React.FC<ParamEditorProps> = ({ params, onChange, disa
                 checked={p.required}
                 onChange={(e) => update(i, { required: e.target.checked })}
                 disabled={disabled}
-                style={{ cursor: disabled ? 'not-allowed' : 'pointer' }}
+                style={{ cursor: disabled ? 'not-allowed' : 'pointer', accentColor: 'var(--accent)' }}
               />
             </div>
             <div style={{ width: 44, textAlign: 'center' }}>
@@ -144,7 +141,7 @@ export const ParamEditor: React.FC<ParamEditorProps> = ({ params, onChange, disa
           </button>
         )}
         {disabled && rows.length === 0 && (
-          <span style={{ fontSize: 12, color: '#9ca3af' }}>无参数</span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>无参数</span>
         )}
       </div>
     </div>

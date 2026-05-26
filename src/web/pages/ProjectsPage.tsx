@@ -2,7 +2,7 @@
 // API 项目管理页面 · 列表 + CRUD
 // ============================================================
 import React, { useEffect, useState, useCallback } from 'react';
-import { styles } from '../styles.js';
+import { layout } from '../styles.js';
 import { projectsApi } from '../apiClient.js';
 import { ProjectForm } from '../components/ProjectForm.js';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
@@ -72,15 +72,18 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onSelectProject }) =
 
   const typeBadge = (type: string) =>
     type === 'openapi'
-      ? { ...styles.badge, ...styles.badgeBlue, children: 'OpenAPI' }
-      : { ...styles.badge, ...styles.badgeGreen, children: '自定义' };
+      ? { ...layout.badge, ...layout.badgePurple, children: 'OpenAPI' }
+      : { ...layout.badge, ...layout.badgeGreen, children: '自定义' };
 
   return (
     <div>
-      <div style={styles.header}>
-        <h1 style={styles.title}>API 项目集</h1>
+      <div style={layout.cardHeader}>
+        <div>
+          <h1 style={layout.pageTitle}>API 项目集</h1>
+          <p style={layout.pageSubtitle}>管理所有 API 项目，支持自定义接口与 OpenAPI 托管</p>
+        </div>
         <button
-          style={{ ...styles.btn, ...styles.btnPrimary }}
+          style={{ ...layout.btn, ...layout.btnPrimary }}
           onClick={() => setShowForm(true)}
         >
           + 新建项目
@@ -88,53 +91,62 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onSelectProject }) =
       </div>
 
       {loading ? (
-        <p style={{ color: '#9ca3af' }}>加载中…</p>
+        <div style={layout.emptyState}>
+          <div className="skeleton" style={{ width: '60%', height: 20, margin: '0 auto 8px' }} />
+          <div className="skeleton" style={{ width: '40%', height: 16, margin: '0 auto' }} />
+        </div>
       ) : projects.length === 0 ? (
-        <div style={{ ...styles.card, textAlign: 'center', padding: 48 }}>
-          <p style={{ color: '#9ca3af', marginBottom: 16 }}>暂无项目，点击上方按钮创建第一个项目</p>
+        <div style={{ ...layout.card, ...layout.emptyState }}>
+          <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.3 }}>⊞</div>
+          <p style={{ marginBottom: 8 }}>暂无项目</p>
+          <p style={layout.textMuted}>点击上方按钮创建第一个 API 项目</p>
         </div>
       ) : (
-        <div style={styles.card}>
-          <table style={styles.table}>
+        <div style={layout.card}>
+          <table style={layout.table}>
             <thead>
               <tr>
-                <th style={styles.th}>名称</th>
-                <th style={styles.th}>类型</th>
-                <th style={styles.th}>描述</th>
-                <th style={styles.th}>更新时间</th>
-                <th style={{ ...styles.th, textAlign: 'right' }}>操作</th>
+                <th style={layout.th}>名称</th>
+                <th style={layout.th}>类型</th>
+                <th style={layout.th}>描述</th>
+                <th style={layout.th}>更新时间</th>
+                <th style={{ ...layout.th, textAlign: 'right' }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {projects.map((p) => (
                 <tr key={p.id}>
-                  <td style={styles.td}>
-                    <span
-                      style={{ color: '#2563eb', cursor: 'pointer', fontWeight: 500 }}
+                  <td style={layout.td}>
+                    <button
+                      style={layout.link}
                       onClick={() => onSelectProject(p)}
                     >
                       {p.name}
-                    </span>
+                    </button>
                   </td>
-                  <td style={styles.td}><span style={typeBadge(p.type)} /></td>
-                  <td style={styles.td}><span style={{ color: '#6b7280', fontSize: 13 }}>{p.description || '-'}</span></td>
-                  <td style={styles.td}>{new Date(p.updatedAt).toLocaleString('zh-CN')}</td>
-                  <td style={{ ...styles.td, textAlign: 'right' }}>
-                    <div style={{ ...styles.flexRow, justifyContent: 'flex-end' }}>
+                  <td style={layout.td}><span style={typeBadge(p.type)} /></td>
+                  <td style={layout.td}>
+                    <span style={layout.textSecondary}>{p.description || '—'}</span>
+                  </td>
+                  <td style={{ ...layout.td, fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--text-muted)' }}>
+                    {new Date(p.updatedAt).toLocaleString('zh-CN')}
+                  </td>
+                  <td style={{ ...layout.td, textAlign: 'right' }}>
+                    <div style={{ ...layout.flexRow, justifyContent: 'flex-end' }}>
                       <button
-                        style={{ ...styles.btn, ...styles.btnSmall }}
+                        style={{ ...layout.btn, ...layout.btnSmall }}
                         onClick={() => onSelectProject(p)}
                       >
-                        查看节点
+                        节点
                       </button>
                       <button
-                        style={{ ...styles.btn, ...styles.btnSmall }}
+                        style={{ ...layout.btn, ...layout.btnSmall }}
                         onClick={() => setEditingProject(p)}
                       >
                         编辑
                       </button>
                       <button
-                        style={{ ...styles.btn, ...styles.btnSmall, ...styles.btnDanger }}
+                        style={{ ...layout.btn, ...layout.btnSmall, ...layout.btnDanger }}
                         onClick={() => setDeletingId(p.id)}
                       >
                         删除
@@ -149,10 +161,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onSelectProject }) =
       )}
 
       {showForm && (
-        <ProjectForm
-          onSubmit={handleCreate}
-          onCancel={() => setShowForm(false)}
-        />
+        <ProjectForm onSubmit={handleCreate} onCancel={() => setShowForm(false)} />
       )}
 
       {editingProject && (

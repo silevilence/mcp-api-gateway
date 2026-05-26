@@ -2,7 +2,8 @@
 // OpenAPI 导入组件
 // ============================================================
 import React, { useState } from 'react';
-import { styles } from '../styles.js';
+import { createPortal } from 'react-dom';
+import { layout } from '../styles.js';
 import { openapiApi } from '../apiClient.js';
 
 interface OpenApiImportProps {
@@ -24,29 +25,15 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
     setError(null);
     try {
       if (mode === 'url') {
-        if (!url.trim()) {
-          setError('请输入 OpenAPI 文档 URL');
-          setLoading(false);
-          return;
-        }
+        if (!url.trim()) { setError('请输入 OpenAPI 文档 URL'); setLoading(false); return; }
         const res = await openapiApi.parseUrl(url.trim());
-        if (res.code === 0) {
-          setResult(res.data);
-        } else {
-          setError(res.message);
-        }
+        if (res.code === 0) setResult(res.data);
+        else setError(res.message);
       } else {
-        if (!jsonText.trim()) {
-          setError('请输入 OpenAPI JSON 文档内容');
-          setLoading(false);
-          return;
-        }
+        if (!jsonText.trim()) { setError('请输入 OpenAPI JSON 文档内容'); setLoading(false); return; }
         const res = await openapiApi.parseJson(jsonText.trim(), projectId);
-        if (res.code === 0) {
-          setResult(res.data);
-        } else {
-          setError(res.message);
-        }
+        if (res.code === 0) setResult(res.data);
+        else setError(res.message);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '导入失败');
@@ -60,8 +47,7 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
     setError(null);
     try {
       const res = await openapiApi.syncDiff({
-        projectId,
-        url: mode === 'url' ? url.trim() : undefined,
+        projectId, url: mode === 'url' ? url.trim() : undefined,
         jsonText: mode === 'json' ? jsonText.trim() : undefined,
       });
       if (res.code === 0) {
@@ -70,8 +56,6 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
         if (diff.added.length) parts.push(`新增 ${diff.added.length} 个`);
         if (diff.removed.length) parts.push(`移除 ${diff.removed.length} 个`);
         if (diff.modified.length) parts.push(`更新 ${diff.modified.length} 个`);
-        setResult({ endpointCount: diff.added.length + diff.modified.length });
-        setError(null);
         if (parts.length > 0) {
           alert(`Diff 同步完成：${parts.join('，')}`);
         } else {
@@ -88,20 +72,20 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
     }
   };
 
-  return (
-    <div style={styles.modal} onClick={onCancel}>
-      <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
-        <h3 style={{ margin: '0 0 20px 0', fontSize: 18 }}>导入 OpenAPI 文档</h3>
+  return createPortal(
+    <div style={layout.modalOverlay} onClick={onCancel}>
+      <div style={layout.modalContent} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ margin: '0 0 24px 0', fontSize: 18, fontWeight: 700 }}>导入 OpenAPI 文档</h3>
 
-        <div style={{ ...styles.flexRow, marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
           <button
-            style={{ ...styles.btn, ...(mode === 'url' ? styles.btnPrimary : {}) }}
+            style={{ ...layout.btn, ...(mode === 'url' ? layout.btnPrimary : {}) }}
             onClick={() => setMode('url')}
           >
             远程 URL
           </button>
           <button
-            style={{ ...styles.btn, ...(mode === 'json' ? styles.btnPrimary : {}) }}
+            style={{ ...layout.btn, ...(mode === 'json' ? layout.btnPrimary : {}) }}
             onClick={() => setMode('json')}
           >
             本地 JSON
@@ -109,20 +93,20 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
         </div>
 
         {mode === 'url' ? (
-          <div style={styles.formGroup}>
-            <label style={styles.label}>文档 URL</label>
+          <div style={layout.formGroup}>
+            <label style={layout.label}>文档 URL</label>
             <input
-              style={styles.input}
+              style={layout.input}
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://api.example.com/openapi.json"
             />
           </div>
         ) : (
-          <div style={styles.formGroup}>
-            <label style={styles.label}>OpenAPI JSON 内容</label>
+          <div style={layout.formGroup}>
+            <label style={layout.label}>OpenAPI JSON 内容</label>
             <textarea
-              style={{ ...styles.textarea, minHeight: 200 }}
+              style={{ ...layout.textarea, minHeight: 200 }}
               value={jsonText}
               onChange={(e) => setJsonText(e.target.value)}
               placeholder="粘贴完整的 OpenAPI / Swagger JSON..."
@@ -131,28 +115,36 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
         )}
 
         {error && (
-          <div style={{ padding: '8px 12px', background: '#fee2e2', borderRadius: 6, marginBottom: 12, fontSize: 13, color: '#991b1b' }}>
+          <div style={{
+            padding: '10px 14px', background: 'var(--danger-soft)',
+            borderRadius: 'var(--radius-md)', marginBottom: 12,
+            fontSize: 13, color: 'var(--danger)', border: '1px solid var(--danger)',
+          }}>
             {error}
           </div>
         )}
 
         {result && (
-          <div style={{ padding: '8px 12px', background: '#d1fae5', borderRadius: 6, marginBottom: 12, fontSize: 13, color: '#065f46' }}>
+          <div style={{
+            padding: '10px 14px', background: 'var(--success-soft)',
+            borderRadius: 'var(--radius-md)', marginBottom: 12,
+            fontSize: 13, color: 'var(--success)', border: '1px solid var(--success)',
+          }}>
             解析成功，共 {result.endpointCount} 个端点
           </div>
         )}
 
-        <div style={{ ...styles.flexRow, justifyContent: 'flex-end', marginTop: 16 }}>
-          <button style={styles.btn} onClick={onCancel}>关闭</button>
+        <div style={{ ...layout.flexRow, justifyContent: 'flex-end', marginTop: 20, gap: 12 }}>
+          <button style={layout.btn} onClick={onCancel}>关闭</button>
           <button
-            style={{ ...styles.btn, ...styles.btnPrimary }}
+            style={{ ...layout.btn, ...layout.btnPrimary }}
             onClick={handleImport}
             disabled={loading}
           >
             {loading ? '解析中…' : '解析'}
           </button>
           <button
-            style={{ ...styles.btn, ...styles.btnPrimary }}
+            style={{ ...layout.btn, ...layout.btnPrimary }}
             onClick={handleSyncDiff}
             disabled={loading}
           >
@@ -160,6 +152,7 @@ export const OpenApiImport: React.FC<OpenApiImportProps> = ({ projectId, onDone,
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

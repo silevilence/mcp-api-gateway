@@ -2,7 +2,7 @@
 // Toast 通知组件
 // ============================================================
 import React, { useEffect, useState, useCallback, createContext, useContext } from 'react';
-import { styles } from '../styles.js';
+import { layout } from '../styles.js';
 
 interface ToastItem {
   id: number;
@@ -39,15 +39,17 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div style={{ position: 'fixed', top: 20, right: 20, zIndex: 200, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {toasts.map((t) => (
+      <div style={layout.toastContainer}>
+        {toasts.map((t, i) => (
           <div
             key={t.id}
             style={{
-              ...styles.toast,
-              ...(t.type === 'success' ? styles.toastSuccess : styles.toastError),
+              ...layout.toast,
+              ...(t.type === 'success' ? layout.toastSuccess : layout.toastError),
+              opacity: i === toasts.length - 1 ? 1 : 0.6,
             }}
           >
+            <span style={{ marginRight: 6 }}>{t.type === 'success' ? '✓' : '✕'}</span>
             {t.message}
           </div>
         ))}
