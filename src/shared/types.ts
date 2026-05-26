@@ -1,0 +1,91 @@
+// ============================================================
+// mcp-api-gateway · 前后端共享接口契约与类型定义
+// ============================================================
+
+// ---- API 统一响应信封 ----
+export interface ApiResponse<T = unknown> {
+  code: number;
+  message: string;
+  data: T;
+}
+
+// ---- API 项目集 (策略容器) ----
+export interface ApiProject {
+  id: string;
+  name: string;
+  description: string;
+  /** 项目类型：custom = 自定义接口, openapi = OpenAPI 托管 */
+  type: ProjectType;
+  /** OpenAPI 远程 URL（openapi 类型专用） */
+  sourceUrl?: string;
+  /** OpenAPI 本地 JSON 文档路径 */
+  localJsonPath?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProjectType = 'custom' | 'openapi';
+
+// ---- API 节点 ----
+export interface ApiNode {
+  id: string;
+  projectId: string;
+  name: string;
+  description: string;
+  /** HTTP 方法 */
+  method: HttpMethod;
+  /** 请求路径 */
+  path: string;
+  /** 输入参数定义 */
+  params: ApiParam[];
+  /** 是否归档隐藏 */
+  hidden: boolean;
+  /** 分组标签 */
+  group?: string;
+  /** 备注（OpenAPI 类型下允许覆写的附加属性） */
+  remark?: string;
+  /** 节点来源 */
+  source: NodeSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+
+export interface ApiParam {
+  key: string;
+  type: ParamType;
+  required: boolean;
+  description?: string;
+  /** 参数位置 */
+  location: ParamLocation;
+  defaultValue?: unknown;
+}
+
+export type ParamType = 'string' | 'number' | 'integer' | 'boolean' | 'date' | 'object' | 'array';
+export type ParamLocation = 'query' | 'path' | 'body' | 'formData';
+
+export type NodeSource = 'custom' | 'openapi';
+
+// ---- 操作审计日志 ----
+export interface AuditLog {
+  id: string;
+  action: AuditAction;
+  targetType: 'project' | 'node';
+  targetId: string;
+  detail: string;
+  timestamp: string;
+}
+
+export type AuditAction = 'create' | 'update' | 'delete' | 'archive' | 'unarchive' | 'sync';
+
+// ---- OpenAPI 同步 Diff 结果 ----
+export interface SyncDiffResult {
+  added: ApiNode[];
+  removed: ApiNode[];
+  modified: Array<{
+    before: ApiNode;
+    after: ApiNode;
+    changes: string[];
+  }>;
+}
