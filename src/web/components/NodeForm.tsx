@@ -1,0 +1,151 @@
+// ============================================================
+// 节点表单 · 创建/编辑
+// ============================================================
+import React, { useState } from 'react';
+import { styles } from '../styles.js';
+import { FieldHint } from './FieldHint.js';
+import { ParamEditor } from './ParamEditor.js';
+import type { ApiNode, HttpMethod, ApiParam } from '@shared/types.js';
+
+interface NodeFormProps {
+  projectId: string;
+  node?: ApiNode | null;
+  onSubmit: (data: Record<string, unknown>) => void;
+  onCancel: () => void;
+}
+
+export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, onCancel }) => {
+  const isEdit = !!node;
+  const isOpenApi = node?.source === 'openapi';
+
+  const [name, setName] = useState(node?.name ?? '');
+  const [description, setDescription] = useState(node?.description ?? '');
+  const [method, setMethod] = useState<HttpMethod>(node?.method ?? 'GET');
+  const [path, setPath] = useState(node?.path ?? '');
+  const [group, setGroup] = useState(node?.group ?? '');
+  const [remark, setRemark] = useState(node?.remark ?? '');
+  const [params, setParams] = useState<ApiParam[]>(node?.params ?? []);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !path.trim()) return;
+
+    if (isEdit) {
+      const data: Record<string, unknown> = {
+        name: name.trim(),
+        description: description.trim(),
+        method,
+        path: path.trim(),
+        params,
+        group: group.trim() || undefined,
+        remark: remark.trim() || undefined,
+      };
+      onSubmit(data);
+    } else {
+      const data: Record<string, unknown> = {
+        projectId,
+        name: name.trim(),
+        description: description.trim(),
+        method,
+        path: path.trim(),
+        params,
+        group: group.trim() || undefined,
+        remark: remark.trim() || undefined,
+      };
+      onSubmit(data);
+    }
+  };
+
+  return (
+    <div style={styles.modal} onClick={onCancel}>
+      <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        <h3 style={{ margin: '0 0 20px 0', fontSize: 18 }}>
+          {isEdit ? '编辑 API 节点' : '新建 API 节点'}
+        </h3>
+        {isOpenApi && (
+          <div style={{ padding: '8px 12px', background: '#fef3c7', borderRadius: 6, marginBottom: 16, fontSize: 13, color: '#92400e' }}>
+            OpenAPI 托管节点：接口地址 / 方法 / 参数不可修改，仅可编辑备注和分组。
+          </div>
+        )}
+        <form onSubmit={handleSubmit}>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              名称 <span style={{ color: '#dc2626' }}>*</span>
+              <FieldHint text="给这个接口起一个便于识别的名称，例如「获取用户列表」" />
+            </label>
+            <input style={styles.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="例如：获取用户列表" autoFocus />
+          </div>
+          <div style={{ ...styles.flexRow, gap: 12 }}>
+            <div style={{ ...styles.formGroup, flex: 1 }}>
+              <label style={styles.label}>
+                方法 <span style={{ color: '#dc2626' }}>*</span>
+                <FieldHint text="HTTP 请求方法：GET 获取数据、POST 创建数据、PUT 全量更新、PATCH 部分更新、DELETE 删除" />
+              </label>
+              <select
+                style={styles.select}
+                value={method}
+                onChange={(e) => setMethod(e.target.value as HttpMethod)}
+                disabled={isOpenApi}
+              >
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+                <option value="PATCH">PATCH</option>
+              </select>
+            </div>
+            <div style={{ ...styles.formGroup, flex: 2 }}>
+              <label style={styles.label}>
+                接口地址 <span style={{ color: '#dc2626' }}>*</span>
+                <FieldHint text="完整的接口 URL，从 http:// 或 https:// 开始，例如 https://api.example.com/v1/users" />
+              </label>
+              <input
+                style={styles.input}
+                value={path}
+                onChange={(e) => setPath(e.target.value)}
+                placeholder="https://api.example.com/v1/users"
+                disabled={isOpenApi}
+              />
+            </div>
+          </div>
+          <div style={styles.formGroup}>
+            <label style={styles.label}>
+              描述
+              <FieldHint text="简要说明这个接口的用途和业务含义" />
+            </label>
+            <textarea style={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="接口的用途和说明" />
+          </div>
+          <div style={styles.formGroup}>
+            <ParamEditor
+              params={params}
+              onChange={setParams}
+              disabled={isOpenApi}
+            />
+          </div>
+          <div style={{ ...styles.flexRow, gap: 12 }}>
+            <div style={{ ...styles.formGroup, flex: 1 }}>
+              <label style={styles.label}>
+                分组
+                <FieldHint text="给接口打上分组标签，方便在列表中按组筛选，例如「用户管理」「订单系统」" />
+              </label>
+              <input style={styles.input} value={group} onChange={(e) => setGroup(e.target.value)} placeholder="例如：用户管理" />
+            </div>
+            <div style={{ ...styles.formGroup, flex: 1 }}>
+              <label style={styles.label}>
+                备注
+                <FieldHint text="额外的备忘信息，仅自己可见" />
+              </label>
+              <input style={styles.input} value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="附加备注" />
+            </div>
+          </div>
+          <div style={{ ...styles.flexRow, justifyContent: 'flex-end', marginTop: 20 }}>
+            <button type="button" style={styles.btn} onClick={onCancel}>取消</button>
+            <button type="submit" style={{ ...styles.btn, ...styles.btnPrimary }} disabled={!name.trim() || !path.trim()}>
+              {isEdit ? '保存' : '创建'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
