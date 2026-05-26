@@ -3,10 +3,11 @@
 // ============================================================
 import React, { useEffect, useState, useCallback } from 'react';
 import { layout, methodStyle } from '../styles.js';
-import { nodesApi } from '../apiClient.js';
+import { nodesApi, apiNodes } from '../apiClient.js';
 import { NodeForm } from '../components/NodeForm.js';
 import { OpenApiImport } from '../components/OpenApiImport.js';
 import { ConfirmDialog } from '../components/ConfirmDialog.js';
+import { SandboxPanel } from '../components/SandboxPanel.js';
 import { useToast } from '../components/Toast.js';
 import type { ApiNode, ApiProject } from '@shared/types.js';
 
@@ -23,6 +24,8 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showImport, setShowImport] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [debuggingNodeId, setDebuggingNodeId] = useState<string | null>(null);
   const { showToast } = useToast();
 
   const fetchNodes = useCallback(async () => {
@@ -97,6 +100,36 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
     }
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === visibleNodes.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleNodes.map((n) => n.id)));
+    }
+  };
+
+  const handleBatchMcpRegister = async (enabled: boolean) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    const res = await apiNodes.batchMcpRegister(ids, enabled);
+    if (res.code === 0) {
+      const r = res.data as { registered: number; failed: Array<{ nodeId: string; reason: string }> };
+      showToast(`${enabled ? '注册' : '取消注册'}成功：${r.registered} 个${r.failed.length > 0 ? `，失败 ${r.failed.length} 个` : ''}`, r.failed.length > 0 ? 'error' : 'success');
+      setSelectedIds(new Set());
+      fetchNodes();
+    } else {
+      showToast(res.message, 'error');
+    }
+  };
+
   const sourceBadge = (source: string) =>
     source === 'openapi'
       ? { ...layout.badge, ...layout.badgePurple, children: 'OpenAPI' }
@@ -161,20 +194,56 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
         </div>
       ) : (
         <div style={layout.card}>
+          {/* 批量操作栏 */}
+          {selectedIds.size > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12,
+              padding: '8px 16px', background: 'var(--bg-input)',
+              borderRadius: 'var(--radius-md) var(--radius-md) 0 0',
+              borderBottom: '1px solid var(--border)', fontSize: 13,
+            }}>
+              <span style={{ color: 'var(--text-secondary)' }}>已选 {selectedIds.size} 项</span>
+              <button
+                style={{ ...layout.btn, ...layout.btnSmall, background: 'var(--accent)', color: '#fff', border: 'none' }}
+                onClick={() => handleBatchMcpRegister(true)}
+              >
+                ⚡ 注册为 MCP Tool
+              </button>
+              <button
+                style={{ ...layout.btn, ...layout.btnSmall }}
+                onClick={() => handleBatchMcpRegister(false)}
+              >
+                取消注册
+              </button>
+              <button
+                style={{ ...layout.btn, ...layout.btnSmall }}
+                onClick={() => setSelectedIds(new Set())}
+              >
+                取消选择
+              </button>
+            </div>
+          )}
           <table style={layout.table}>
             <thead>
               <tr>
+                <th style={{ ...layout.th, width: 36 }}>
+                  <input type="checkbox" checked={selectedIds.size === visibleNodes.length && visibleNodes.length > 0} onChange={toggleSelectAll} />
+                </th>
                 <th style={{ ...layout.th, width: 60 }}>方法</th>
                 <th style={layout.th}>名称 / 路径</th>
-                <th style={layout.th}>来源</th>
+                <th style={{ ...layout.th, width: 120 }}>接口标识</th>
+                <th style={{ ...layout.th, width: 80 }}>MCP Tool</th>
+                <th style={{ ...layout.th, width: 70 }}>来源</th>
                 <th style={layout.th}>分组</th>
-                <th style={layout.th}>备注</th>
                 <th style={{ ...layout.th, textAlign: 'right' }}>操作</th>
               </tr>
             </thead>
             <tbody>
               {visibleNodes.map((n) => (
                 <tr key={n.id} style={n.hidden ? layout.hiddenRow : undefined}>
+                  <td style={layout.td}>
+                    <input type="checkbox" checked={selectedIds.has(n.id)} onChange={() => toggleSelect(n.id)} />
+                  </td>
                   <td style={layout.td}>
                     <span style={{ ...methodStyle(n.method), fontSize: 12 }}>{n.method}</span>
                   </td>
@@ -188,18 +257,28 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
                     }}>
                       {n.path}
                     </code>
-                    {n.description && (
-                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {n.description}
-                      </div>
+                  </td>
+                  <td style={layout.td}>
+                    {n.slug ? (
+                      <code style={{ fontSize: 11, color: 'var(--accent)', background: 'var(--bg-input)', padding: '2px 6px', borderRadius: 4 }}>{n.slug}</code>
+                    ) : (
+                      <span style={{ ...layout.textMuted, fontSize: 11 }}>未配置</span>
+                    )}
+                  </td>
+                  <td style={layout.td}>
+                    {n.slug ? (
+                      n.mcpToolEnabled ? (
+                        <span style={{ color: 'var(--success)', fontSize: 12 }}>● 已注册</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-secondary)', fontSize: 12 }}>○ 未启用</span>
+                      )
+                    ) : (
+                      <span style={{ ...layout.textMuted, fontSize: 11 }}>—</span>
                     )}
                   </td>
                   <td style={layout.td}><span style={sourceBadge(n.source)} /></td>
                   <td style={layout.td}>
                     {n.group ? <span style={layout.tag}>{n.group}</span> : <span style={layout.textMuted}>—</span>}
-                  </td>
-                  <td style={layout.td}>
-                    <span style={layout.textSecondary}>{n.remark || '—'}</span>
                   </td>
                   <td style={{ ...layout.td, textAlign: 'right' }}>
                     <div style={{ ...layout.flexRow, justifyContent: 'flex-end' }}>
@@ -208,6 +287,12 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
                         onClick={() => setEditingNode(n)}
                       >
                         编辑
+                      </button>
+                      <button
+                        style={{ ...layout.btn, ...layout.btnSmall, color: 'var(--accent)', borderColor: 'var(--accent)' }}
+                        onClick={() => setDebuggingNodeId(debuggingNodeId === n.id ? null : n.id)}
+                      >
+                        {debuggingNodeId === n.id ? '关闭调试' : '调试'}
                       </button>
                       {n.hidden ? (
                         <button
@@ -238,6 +323,12 @@ export const NodesPage: React.FC<NodesPageProps> = ({ project, onBack }) => {
           </table>
         </div>
       )}
+
+      {debuggingNodeId && (() => {
+        const debugNode = nodes.find((n) => n.id === debuggingNodeId);
+        if (!debugNode) return null;
+        return <SandboxPanel node={debugNode} onClose={() => setDebuggingNodeId(null)} />;
+      })()}
 
       {showForm && (
         <NodeForm projectId={project.id} onSubmit={handleCreate} onCancel={() => setShowForm(false)} />

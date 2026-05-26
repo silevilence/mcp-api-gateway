@@ -108,6 +108,7 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onSelectProject }) =
               <tr>
                 <th style={layout.th}>名称</th>
                 <th style={layout.th}>类型</th>
+                <th style={{ ...layout.th, width: 60 }}>MCP</th>
                 <th style={layout.th}>描述</th>
                 <th style={layout.th}>更新时间</th>
                 <th style={{ ...layout.th, textAlign: 'right' }}>操作</th>
@@ -125,6 +126,16 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onSelectProject }) =
                     </button>
                   </td>
                   <td style={layout.td}><span style={typeBadge(p.type)} /></td>
+                  <td style={{ ...layout.td, textAlign: 'center' }}>
+                    {p.slug ? (
+                      <span title={p.mcpEnabled ? `MCP 已启用 — /api/${p.slug}/mcp` : 'MCP 未启用'} style={{
+                        display: 'inline-block', width: 8, height: 8, borderRadius: '50%',
+                        background: p.mcpEnabled ? 'var(--success)' : 'var(--border)',
+                      }} />
+                    ) : (
+                      <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>—</span>
+                    )}
+                  </td>
                   <td style={layout.td}>
                     <span style={layout.textSecondary}>{p.description || '—'}</span>
                   </td>

@@ -19,6 +19,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
   const [description, setDescription] = useState(project?.description ?? '');
   const [type, setType] = useState<ProjectType>(project?.type ?? 'custom');
   const [sourceUrl, setSourceUrl] = useState(project?.sourceUrl ?? '');
+  const [slug, setSlug] = useState(project?.slug ?? '');
+  const [mcpEnabled, setMcpEnabled] = useState(project?.mcpEnabled ?? false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +30,8 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
     if ((type === 'openapi' || (isEdit && project?.type === 'openapi'))) {
       data.sourceUrl = sourceUrl.trim() || undefined;
     }
+    data.slug = slug.trim() || undefined;
+    data.mcpEnabled = mcpEnabled;
     onSubmit(data);
   };
 
@@ -87,6 +91,43 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://api.example.com/openapi.json"
               />
+            </div>
+          )}
+          <div style={layout.formGroup}>
+            <label style={layout.label}>
+              项目标识 (Slug)
+              <FieldHint text="英文字母、数字、短横线及下划线。作为 MCP 端点路径的一部分。留空则自动从名称生成" />
+            </label>
+            <input
+              style={layout.input}
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="例如 my-project 或 user-service（留空自动生成）"
+            />
+          </div>
+          {isEdit && (
+            <div style={{ ...layout.formGroup, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <label style={{ ...layout.label, marginBottom: 0 }}>MCP 服务</label>
+              <button
+                type="button"
+                onClick={() => setMcpEnabled(!mcpEnabled)}
+                disabled={!slug.trim()}
+                title={!slug.trim() ? '请先配置项目标识' : mcpEnabled ? '点击禁用 MCP 服务' : '点击启用 MCP 服务'}
+                style={{
+                  width: 44, height: 24, borderRadius: 12, border: 'none', cursor: slug.trim() ? 'pointer' : 'not-allowed',
+                  background: mcpEnabled ? 'var(--success)' : 'var(--border)',
+                  position: 'relative', transition: 'background 0.2s', opacity: slug.trim() ? 1 : 0.5,
+                }}
+              >
+                <span style={{
+                  position: 'absolute', top: 2, left: mcpEnabled ? 22 : 2,
+                  width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                  transition: 'left 0.2s',
+                }} />
+              </button>
+              <span style={{ fontSize: 12, color: mcpEnabled ? 'var(--success)' : 'var(--text-secondary)' }}>
+                {mcpEnabled ? `已启用 — /api/${slug || '?'}/mcp` : '未启用'}
+              </span>
             </div>
           )}
           <div style={{ ...layout.flexRow, justifyContent: 'flex-end', marginTop: 24, gap: 12 }}>

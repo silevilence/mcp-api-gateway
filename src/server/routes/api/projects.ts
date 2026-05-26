@@ -77,3 +77,22 @@ apiProjectRouter.delete('/:id', (req: Request, res: Response) => {
   const body: ApiResponse = { code: 0, message: 'ok', data: null };
   res.json(body);
 });
+
+// PATCH /api/projects/:id/slug —— 单独更新项目标识
+apiProjectRouter.patch('/:id/slug', (req: Request, res: Response) => {
+  const { slug } = req.body as Record<string, unknown>;
+  if (!slug || typeof slug !== 'string') {
+    const body: ApiResponse = { code: 400, message: 'slug 为必填字段', data: null };
+    res.status(400).json(body);
+    return;
+  }
+
+  const result = projectService.updateProjectSlug(req.params.id as string, slug);
+  if ('error' in result) {
+    const body: ApiResponse = { code: result.code, message: result.error, data: null };
+    res.status(result.code).json(body);
+    return;
+  }
+  const body: ApiResponse = { code: 0, message: 'ok', data: result };
+  res.json(body);
+});

@@ -109,3 +109,35 @@ export const auditApi = {
 export const healthApi = {
   check: () => request<{ status: string; uptime: number; timestamp: string }>(`${BASE}/health`),
 };
+
+// ---- /api 命名空间（外部接口）----
+const API = '/api';
+
+export const apiProjects = {
+  updateSlug: (id: string, slug: string) =>
+    request<ApiProject>(`${API}/projects/${id}/slug`, {
+      method: 'PATCH',
+      body: JSON.stringify({ slug }),
+    }),
+};
+
+export const apiNodes = {
+  updateSlug: (id: string, slug: string) =>
+    request<ApiNode>(`${API}/nodes/${id}/slug`, {
+      method: 'PATCH',
+      body: JSON.stringify({ slug }),
+    }),
+  batchMcpRegister: (nodeIds: string[], enabled: boolean) =>
+    request<{ registered: number; failed: Array<{ nodeId: string; reason: string }> }>(
+      `${API}/nodes/batch-mcp-register`,
+      { method: 'POST', body: JSON.stringify({ nodeIds, enabled }) },
+    ),
+};
+
+export const sandboxApi = {
+  execute: (nodeId: string, paramValues: Record<string, unknown>, baseUrlOverride?: string) =>
+    request<import('@shared/types.js').SandboxResponse>(`${API}/sandbox/execute`, {
+      method: 'POST',
+      body: JSON.stringify({ nodeId, paramValues, baseUrlOverride }),
+    }),
+};

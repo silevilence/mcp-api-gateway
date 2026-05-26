@@ -26,6 +26,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, o
   const [group, setGroup] = useState(node?.group ?? '');
   const [remark, setRemark] = useState(node?.remark ?? '');
   const [params, setParams] = useState<ApiParam[]>(node?.params ?? []);
+  const [slug, setSlug] = useState(node?.slug ?? '');
+  const [mcpToolEnabled, setMcpToolEnabled] = useState(node?.mcpToolEnabled ?? false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +38,8 @@ export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, o
       method, path: path.trim(), params,
       group: group.trim() || undefined,
       remark: remark.trim() || undefined,
+      slug: slug.trim() || undefined,
+      mcpToolEnabled,
     };
     if (!isEdit) data.projectId = projectId;
     onSubmit(data);
@@ -121,6 +125,42 @@ export const NodeForm: React.FC<NodeFormProps> = ({ projectId, node, onSubmit, o
                 <FieldHint text="额外的备忘信息，仅自己可见" />
               </label>
               <input style={layout.input} value={remark} onChange={(e) => setRemark(e.target.value)} placeholder="附加备注" />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <div style={{ ...layout.formGroup, flex: 1 }}>
+              <label style={layout.label}>
+                接口标识 (Slug)
+                <FieldHint text="英文字母、数字、短横线及下划线。作为 MCP Tool 名称。留空则自动从名称生成" />
+              </label>
+              <input style={layout.input} value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="例如 get-user-list（留空自动生成）" />
+            </div>
+            <div style={{ ...layout.formGroup, flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div>
+                <label style={{ ...layout.label, marginBottom: 4 }}>MCP Tool</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 40 }}>
+                  <button
+                    type="button"
+                    onClick={() => setMcpToolEnabled(!mcpToolEnabled)}
+                    disabled={!slug.trim()}
+                    title={!slug.trim() ? '请先配置接口标识' : mcpToolEnabled ? '点击取消注册' : '点击注册为 MCP Tool'}
+                    style={{
+                      width: 44, height: 24, borderRadius: 12, border: 'none', cursor: slug.trim() ? 'pointer' : 'not-allowed',
+                      background: mcpToolEnabled ? 'var(--success)' : 'var(--border)',
+                      position: 'relative', transition: 'background 0.2s', opacity: slug.trim() ? 1 : 0.5,
+                    }}
+                  >
+                    <span style={{
+                      position: 'absolute', top: 2, left: mcpToolEnabled ? 22 : 2,
+                      width: 20, height: 20, borderRadius: '50%', background: '#fff',
+                      transition: 'left 0.2s',
+                    }} />
+                  </button>
+                  <span style={{ fontSize: 12, color: mcpToolEnabled ? 'var(--success)' : 'var(--text-secondary)' }}>
+                    {mcpToolEnabled ? '已注册' : '未注册'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div style={{ ...layout.flexRow, justifyContent: 'flex-end', marginTop: 24, gap: 12 }}>

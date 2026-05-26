@@ -8,4 +8,11 @@ export { openapiRouter } from './openapi.js';
 export { auditRouter } from './audit.js';
 
 // /api 命名空间路由
-export { apiProjectRouter, apiNodeRouter, apiAuditRouter, mcpRouter } from './api/index.js';
+export {
+  apiProjectRouter,
+  apiNodeRouter,
+  apiAuditRouter,
+  mcpRouter,
+  sandboxRouter,
+} from './api/index.js';
+export { projectMcpRouter } from './api/projectMcp.js';

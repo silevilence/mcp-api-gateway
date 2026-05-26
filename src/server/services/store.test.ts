@@ -3,13 +3,15 @@
 // ============================================================
 import { describe, it, expect, beforeEach } from 'vitest';
 import * as store from '../services/store.js';
-import type { ApiProject, ApiNode, AuditLog } from '../../shared/types.js';
+import type { ApiProject, ApiNode } from '../../shared/types.js';
 
 const makeProject = (id: string): ApiProject => ({
   id,
   name: `项目-${id}`,
   description: '',
   type: 'custom',
+  slug: undefined,
+  mcpEnabled: false,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 });
@@ -24,17 +26,10 @@ const makeNode = (id: string, projectId: string): ApiNode => ({
   params: [],
   hidden: false,
   source: 'custom',
+  slug: undefined,
+  mcpToolEnabled: false,
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
-});
-
-const makeLog = (id: string): AuditLog => ({
-  id,
-  action: 'create',
-  targetType: 'project',
-  targetId: 'p1',
-  detail: 'test',
-  timestamp: new Date().toISOString(),
 });
 
 describe('内存数据存储', () => {
@@ -73,38 +68,5 @@ describe('内存数据存储', () => {
     store.deleteNodesByProjectId('p1');
     expect(store.getAllNodes()).toHaveLength(1);
     expect(store.getNodeById('n3')).toBeDefined();
-  });
-
-  it('审计日志追加与倒序查询', () => {
-    store.appendAuditLog(makeLog('log1'));
-    store.appendAuditLog(makeLog('log2'));
-    store.appendAuditLog(makeLog('log3'));
-
-    const logs = store.getAuditLogs(2);
-    expect(logs).toHaveLength(2);
-    // 倒序排列
-    expect(logs[0].id).toBe('log3');
-  });
-
-  it('removeAuditLogsOlderThan 应正确清理过期日志', () => {
-    const oldLog: AuditLog = {
-      ...makeLog('old'),
-      timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    };
-    const newLog: AuditLog = {
-      ...makeLog('new'),
-      timestamp: new Date().toISOString(),
-    };
-
-    store.appendAuditLog(oldLog);
-    store.appendAuditLog(newLog);
-
-    const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    const removed = store.removeAuditLogsOlderThan(cutoff);
-    expect(removed).toBe(1);
-
-    const remaining = store.getAuditLogs(10);
-    expect(remaining).toHaveLength(1);
-    expect(remaining[0].id).toBe('new');
   });
 });

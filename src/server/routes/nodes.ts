@@ -33,7 +33,7 @@ nodeRouter.get('/:id', (req: Request, res: Response) => {
 
 // POST /internal/nodes
 nodeRouter.post('/', (req: Request, res: Response) => {
-  const { projectId, name, description, method, path, params, group, remark } = req.body as Record<string, unknown>;
+  const { projectId, name, description, method, path, params, group, remark, slug } = req.body as Record<string, unknown>;
 
   if (!projectId || typeof projectId !== 'string') {
     const body: ApiResponse = { code: 400, message: 'projectId 为必填字段', data: null };
@@ -65,6 +65,7 @@ nodeRouter.post('/', (req: Request, res: Response) => {
     params: Array.isArray(params) ? params : undefined,
     group: typeof group === 'string' ? group : undefined,
     remark: typeof remark === 'string' ? remark : undefined,
+    slug: typeof slug === 'string' ? slug : undefined,
   });
 
   if ('error' in result) {
@@ -109,6 +110,8 @@ nodeRouter.put('/:id', (req: Request, res: Response) => {
     params: Array.isArray(body.params) ? body.params : undefined,
     group: body.group !== undefined ? (typeof body.group === 'string' ? body.group : undefined) : undefined,
     remark: body.remark !== undefined ? (typeof body.remark === 'string' ? body.remark : undefined) : undefined,
+    slug: typeof body.slug === 'string' ? body.slug : body.slug === '' ? '' : undefined,
+    mcpToolEnabled: typeof body.mcpToolEnabled === 'boolean' ? body.mcpToolEnabled : undefined,
   });
 
   if (!updated) {

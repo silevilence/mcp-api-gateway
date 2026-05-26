@@ -33,3 +33,7 @@ coverage/
 
 # TypeScript incremental
 *.tsbuildinfo
+
+docs/superpowers/
+.superpowers/
+.data/

@@ -20,6 +20,10 @@ export interface ApiProject {
   sourceUrl?: string;
   /** OpenAPI 本地 JSON 文档路径 */
   localJsonPath?: string;
+  /** 项目唯一标识 (slug)，全局唯一，正则: [a-zA-Z0-9_-]+，1-64 字符 */
+  slug?: string;
+  /** MCP Server 是否已启用（需先配置 slug），默认 false */
+  mcpEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -46,6 +50,10 @@ export interface ApiNode {
   remark?: string;
   /** 节点来源 */
   source: NodeSource;
+  /** 接口唯一标识 (slug)，项目作用域内唯一，正则: [a-zA-Z0-9_-]+，1-64 字符 */
+  slug?: string;
+  /** 是否注册为 MCP Tool，默认 false */
+  mcpToolEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -78,6 +86,32 @@ export interface AuditLog {
 }
 
 export type AuditAction = 'create' | 'update' | 'delete' | 'archive' | 'unarchive' | 'sync';
+
+// ---- 沙箱调试 ----
+export interface SandboxRequest {
+  nodeId: string;
+  paramValues: Record<string, unknown>;
+  baseUrlOverride?: string;
+}
+
+export interface SandboxResponse {
+  statusCode: number;
+  headers: Record<string, string>;
+  body: string;
+  responseTimeMs: number;
+  contentType: string;
+}
+
+// ---- MCP 服务发现 ----
+export interface McpNodeInfo {
+  projectId: string;
+  projectName: string;
+  slug: string;
+  endpoint: string;
+  toolCount: number;
+  /** 是否在线：当前所有已激活的项目级 MCP 均在同一进程内，恒等于 mcpEnabled */
+  online: boolean;
+}
 
 // ---- OpenAPI 同步 Diff 结果 ----
 export interface SyncDiffResult {

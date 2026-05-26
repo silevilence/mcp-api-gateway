@@ -10,7 +10,9 @@ import { z } from 'zod';
 import type { Request, Response } from 'express';
 import * as projectService from './projectService.js';
 import * as nodeService from './nodeService.js';
-import { getRecentLogs } from './auditService.js';
+import { getRecentLogsAsync } from './auditService.js';
+import { getProjectToolCount } from './projectMcpService.js';
+import type { McpNodeInfo } from '../../shared/types.js';
 
 /**
  * 会话存储：sessionId → { server, transport }
@@ -179,9 +181,34 @@ function createServer(): McpServer {
   server.tool('get_audit_logs', '获取最近的审计操作日志', {
     limit: z.number().int().min(1).max(200).optional().default(50).describe('返回条数，最大 200'),
   }, async ({ limit }) => {
-    const logs = getRecentLogs(limit);
+    const logs = await getRecentLogsAsync(limit);
     return { content: [{ type: 'text', text: JSON.stringify(logs, null, 2) }] };
   });
+
+  // ---- 服务发现工具 ----
+
+  server.tool('discover_services', '发现当前所有已激活的项目级 MCP 服务节点及其路由信息',
+    {},
+    async () => {
+      const projects = projectService.listProjects();
+      const nodes: McpNodeInfo[] = projects
+        .filter((p) => p.slug && p.mcpEnabled)
+        .map((p) => ({
+          projectId: p.id,
+          projectName: p.name,
+          slug: p.slug!,
+          endpoint: `/api/${p.slug}/mcp`,
+          toolCount: getProjectToolCount(p.id),
+          online: true,
+        }));
+      return {
+        content: [{
+          type: 'text' as const,
+          text: JSON.stringify(nodes, null, 2),
+        }],
+      };
+    },
+  );
 
   return server;
 }
