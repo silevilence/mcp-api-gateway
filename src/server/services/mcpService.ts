@@ -76,10 +76,11 @@ function createServer(): McpServer {
   server.tool('create_project', '创建新的 API 项目集', {
     name: z.string().describe('项目名称'),
     description: z.string().optional().describe('项目描述'),
-    type: z.enum(['custom', 'openapi']).describe('项目类型：custom 或 openapi'),
+    type: z.enum(['custom', 'openapi', 'filesystem']).describe('项目类型：custom、openapi 或 filesystem'),
     sourceUrl: z.string().optional().describe('OpenAPI 远程 URL（openapi 类型专用）'),
-  }, async ({ name, description, type, sourceUrl }) => {
-    const project = projectService.createProject({ name, description, type, sourceUrl });
+    workspaceRoot: z.string().optional().describe('工作区根目录（filesystem 类型专用）'),
+  }, async ({ name, description, type, sourceUrl, workspaceRoot }) => {
+    const project = projectService.createProject({ name, description, type, sourceUrl, workspaceRoot });
     return { content: [{ type: 'text', text: JSON.stringify(project, null, 2) }] };
   });
 

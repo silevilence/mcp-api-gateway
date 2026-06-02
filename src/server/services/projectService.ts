@@ -20,6 +20,7 @@ export interface CreateProjectInput {
   type: ProjectType;
   sourceUrl?: string;
   localJsonPath?: string;
+  workspaceRoot?: string;
   slug?: string;
 }
 
@@ -28,6 +29,7 @@ export interface UpdateProjectInput {
   description?: string;
   sourceUrl?: string;
   localJsonPath?: string;
+  workspaceRoot?: string;
   slug?: string;
   mcpEnabled?: boolean;
 }
@@ -43,8 +45,20 @@ export function getProject(id: string): ApiProject | undefined {
 }
 
 export function createProject(input: CreateProjectInput): ApiProject {
-  // slug：优先使用传入值，否则从名称自动生成
-  let slug = input.slug?.trim() || generateSlug(input.name) || undefined;
+  // slug：优先使用传入值（需校验格式），否则从名称自动生成
+  let slug: string | undefined;
+  if (input.slug) {
+    const trimmed = input.slug.trim();
+    const validation = validateSlug(trimmed);
+    slug = validation.valid ? trimmed : (generateSlug(input.name) || undefined);
+  } else {
+    slug = generateSlug(input.name) || undefined;
+  }
+
+  // filesystem 类型必须配置 workspaceRoot
+  if (input.type === 'filesystem' && !input.workspaceRoot?.trim()) {
+    throw new Error('文件系统项目必须配置工作区根目录 (workspaceRoot)');
+  }
 
   const project: ApiProject = {
     id: newId(),
@@ -53,6 +67,7 @@ export function createProject(input: CreateProjectInput): ApiProject {
     type: input.type,
     sourceUrl: input.sourceUrl,
     localJsonPath: input.localJsonPath,
+    workspaceRoot: input.workspaceRoot,
     slug,
     mcpEnabled: false,
     createdAt: now(),
@@ -88,6 +103,7 @@ export function updateProject(id: string, input: UpdateProjectInput): ApiProject
     description: input.description ?? existing.description,
     sourceUrl: input.sourceUrl !== undefined ? input.sourceUrl : existing.sourceUrl,
     localJsonPath: input.localJsonPath !== undefined ? input.localJsonPath : existing.localJsonPath,
+    workspaceRoot: input.workspaceRoot !== undefined ? input.workspaceRoot : existing.workspaceRoot,
     slug,
     mcpEnabled,
     updatedAt: now(),

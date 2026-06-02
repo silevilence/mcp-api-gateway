@@ -14,5 +14,6 @@ export {
   apiAuditRouter,
   mcpRouter,
   sandboxRouter,
+  fileSystemRouter,
 } from './api/index.js';
 export { projectMcpRouter } from './api/projectMcp.js';

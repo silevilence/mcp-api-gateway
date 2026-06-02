@@ -5,11 +5,12 @@
 import type { SandboxResponse, ApiNode, ApiParam } from '../../shared/types.js';
 import { getNode } from './nodeService.js';
 import { getProject } from './projectService.js';
+import * as fsService from './fileSystemService.js';
 
 const DEFAULT_TIMEOUT_MS = 30_000;
 
 /**
- * 执行沙箱 HTTP 请求
+ * 执行沙箱请求（HTTP 或文件系统能力）
  * @param nodeId    API 节点 ID
  * @param paramValues  参数值映射 (key → value)
  * @param baseUrlOverride  覆盖 base URL（默认从节点 path 推断或使用 override）
@@ -27,6 +28,11 @@ export async function execute(
   const project = getProject(node.projectId);
   if (!project) {
     throw new SandboxError('关联项目不存在', 404);
+  }
+
+  // ---- 文件系统能力执行路径 ----
+  if (node.source === 'filesystem') {
+    return executeFileSystemCapability(node, paramValues, project.workspaceRoot);
   }
 
   // 构建 URL
@@ -189,6 +195,130 @@ function buildBody(
     }
   }
   return JSON.stringify(body);
+}
+
+// ---- 文件系统能力执行调度 ----
+
+/** 根据节点 params 元信息对 paramValues 做类型转换（前端表单提交的值全是 string） */
+function coerceParams(
+  node: ApiNode,
+  paramValues: Record<string, unknown>,
+): Record<string, unknown> {
+  const coerced: Record<string, unknown> = { ...paramValues };
+  for (const p of node.params) {
+    const raw = coerced[p.key];
+    if (raw === undefined || raw === null || raw === '') {
+      coerced[p.key] = undefined;
+      continue;
+    }
+    switch (p.type) {
+      case 'number':
+      case 'integer':
+        coerced[p.key] = Number(raw);
+        break;
+      case 'boolean':
+        coerced[p.key] = raw === true || raw === 'true' || raw === 1 || raw === '1';
+        break;
+      default:
+        coerced[p.key] = String(raw);
+    }
+  }
+  return coerced;
+}
+
+/** 根据节点 slug（即能力 id）派发到对应文件系统服务函数 */
+async function executeFileSystemCapability(
+  node: ApiNode,
+  paramValues: Record<string, unknown>,
+  workspaceRoot?: string,
+): Promise<SandboxResponse> {
+  const root = workspaceRoot || process.cwd();
+  const startTime = performance.now();
+  const args = coerceParams(node, paramValues);
+
+  try {
+    let result: unknown;
+
+    switch (node.slug) {
+      case 'glob':
+        result = await fsService.glob(
+          args['pattern'] as string,
+          args['path'] as string | undefined,
+          root,
+        );
+        break;
+      case 'ls':
+        result = fsService.ls(
+          args['path'] as string | undefined,
+          args['recursive'] as boolean,
+          root,
+        );
+        break;
+      case 'grep':
+        result = await fsService.grep(
+          args['pattern'] as string,
+          args['path'] as string | undefined,
+          args['include'] as string | undefined,
+          root,
+        );
+        break;
+      case 'read':
+        result = await fsService.read(
+          args['file_path'] as string,
+          args['offset'] as number | undefined,
+          args['limit'] as number | undefined,
+          root,
+        );
+        break;
+      case 'edit':
+        result = await fsService.edit(
+          args['file_path'] as string,
+          args['old_string'] as string,
+          args['new_string'] as string,
+          args['replace_all'] as boolean,
+          root,
+        );
+        break;
+      case 'write':
+        result = await fsService.write(
+          args['file_path'] as string,
+          args['content'] as string,
+          root,
+        );
+        break;
+      case 'delete':
+        result = await fsService.deletePath(
+          args['path'] as string,
+          args['recursive'] as boolean,
+          root,
+        );
+        break;
+      default:
+        throw new SandboxError(`未知的文件系统能力: ${node.slug}`, 400);
+    }
+
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    return {
+      statusCode: 200,
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(result, null, 2),
+      responseTimeMs,
+      contentType: 'application/json',
+    };
+  } catch (err: unknown) {
+    const responseTimeMs = Math.round(performance.now() - startTime);
+    const message = err instanceof SandboxError ? err.message :
+      err instanceof Error ? err.message : '文件系统操作失败';
+    const statusCode = err instanceof SandboxError ? err.code : 500;
+
+    return {
+      statusCode,
+      headers: {},
+      body: JSON.stringify({ error: message }),
+      responseTimeMs,
+      contentType: 'application/json',
+    };
+  }
 }
 
 // ---- 错误类 ----

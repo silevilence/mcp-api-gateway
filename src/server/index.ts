@@ -13,6 +13,7 @@ import {
   apiAuditRouter,
   mcpRouter,
   sandboxRouter,
+  fileSystemRouter,
   projectMcpRouter,
 } from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -44,6 +45,7 @@ app.use('/api/nodes', apiNodeRouter);
 app.use('/api/audit-logs', apiAuditRouter);
 app.use('/api/mcp', mcpRouter);
 app.use('/api/sandbox', sandboxRouter);
+app.use('/api/filesystem', fileSystemRouter);
 // 项目级 MCP：动态路由 /api/:slug/mcp（必须在所有 /api/* 路由之后）
 app.use('/api/:slug/mcp', projectMcpRouter);
 

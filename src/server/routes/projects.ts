@@ -28,7 +28,7 @@ projectRouter.get('/:id', (req: Request, res: Response) => {
 
 // POST /internal/projects
 projectRouter.post('/', (req: Request, res: Response) => {
-  const { name, description, type, sourceUrl, localJsonPath } = req.body as Record<string, unknown>;
+  const { name, description, type, sourceUrl, localJsonPath, slug, workspaceRoot } = req.body as Record<string, unknown>;
 
   if (!name || typeof name !== 'string') {
     const body: ApiResponse = { code: 400, message: '项目名称 (name) 为必填字段', data: null };
@@ -36,8 +36,15 @@ projectRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  if (type !== 'custom' && type !== 'openapi') {
-    const body: ApiResponse = { code: 400, message: '项目类型 (type) 必须为 custom 或 openapi', data: null };
+  if (type !== 'custom' && type !== 'openapi' && type !== 'filesystem') {
+    const body: ApiResponse = { code: 400, message: '项目类型 (type) 必须为 custom、openapi 或 filesystem', data: null };
+    res.status(400).json(body);
+    return;
+  }
+
+  // filesystem 类型必须配置 workspaceRoot
+  if (type === 'filesystem' && (!workspaceRoot || typeof workspaceRoot !== 'string')) {
+    const body: ApiResponse = { code: 400, message: '文件系统项目必须配置工作区根目录 (workspaceRoot)', data: null };
     res.status(400).json(body);
     return;
   }
@@ -48,6 +55,8 @@ projectRouter.post('/', (req: Request, res: Response) => {
     type,
     sourceUrl: typeof sourceUrl === 'string' ? sourceUrl : undefined,
     localJsonPath: typeof localJsonPath === 'string' ? localJsonPath : undefined,
+    slug: typeof slug === 'string' ? slug : undefined,
+    workspaceRoot: typeof workspaceRoot === 'string' ? workspaceRoot : undefined,
   });
 
   const body: ApiResponse = { code: 0, message: 'ok', data: project };

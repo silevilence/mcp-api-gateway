@@ -18,6 +18,7 @@ const statCards = [
   { key: 'nodes', label: '活跃节点', icon: '⬡', color: 'var(--success)' },
   { key: 'custom', label: '自定义项目', icon: '⚙', color: 'var(--purple)' },
   { key: 'openapi', label: 'OpenAPI 项目', icon: '☰', color: 'var(--warning)' },
+  { key: 'filesystem', label: '文件系统项目', icon: '📁', color: 'var(--purple)' },
 ];
 
 export const DashboardPage: React.FC = () => {
@@ -45,12 +46,14 @@ export const DashboardPage: React.FC = () => {
   const visibleNodes = nodes.filter((n) => !n.hidden);
   const customProjects = projects.filter((p) => p.type === 'custom');
   const openapiProjects = projects.filter((p) => p.type === 'openapi');
+  const filesystemProjects = projects.filter((p) => p.type === 'filesystem');
 
   const stats: Record<string, number> = {
     projects: projects.length,
     nodes: visibleNodes.length,
     custom: customProjects.length,
     openapi: openapiProjects.length,
+    filesystem: filesystemProjects.length,
   };
 
   return (

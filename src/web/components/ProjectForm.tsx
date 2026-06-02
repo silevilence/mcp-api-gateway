@@ -19,16 +19,31 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
   const [description, setDescription] = useState(project?.description ?? '');
   const [type, setType] = useState<ProjectType>(project?.type ?? 'custom');
   const [sourceUrl, setSourceUrl] = useState(project?.sourceUrl ?? '');
+  const [workspaceRoot, setWorkspaceRoot] = useState(project?.workspaceRoot ?? '');
   const [slug, setSlug] = useState(project?.slug ?? '');
   const [mcpEnabled, setMcpEnabled] = useState(project?.mcpEnabled ?? false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  const validate = (): boolean => {
+    const errors: Record<string, string> = {};
+    if (!name.trim()) errors.name = '项目名称不能为空';
+    if (!isEdit && type === 'filesystem' && !workspaceRoot.trim()) {
+      errors.workspaceRoot = '文件系统项目必须配置工作区根目录';
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!validate()) return;
     const data: Record<string, unknown> = { name: name.trim(), description: description.trim() };
     if (!isEdit) data.type = type;
     if ((type === 'openapi' || (isEdit && project?.type === 'openapi'))) {
       data.sourceUrl = sourceUrl.trim() || undefined;
+    }
+    if ((type === 'filesystem' || (isEdit && project?.type === 'filesystem'))) {
+      data.workspaceRoot = workspaceRoot.trim() || undefined;
     }
     data.slug = slug.trim() || undefined;
     data.mcpEnabled = mcpEnabled;
@@ -48,12 +63,23 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
               <FieldHint text="给 API 项目集起一个名称，例如「电商平台」「内部工具」" />
             </label>
             <input
-              style={layout.input}
+              style={{
+                ...layout.input,
+                ...(formErrors.name ? { borderColor: 'var(--danger)', boxShadow: '0 0 0 3px var(--danger-soft)' } : {}),
+              }}
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (formErrors.name) setFormErrors((prev) => { const { name: _, ...rest } = prev; return rest; });
+              }}
               placeholder="输入项目名称"
               autoFocus
             />
+            {formErrors.name && (
+              <span style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4, display: 'block' }}>
+                {formErrors.name}
+              </span>
+            )}
           </div>
           <div style={layout.formGroup}>
             <label style={layout.label}>
@@ -71,11 +97,12 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
             <div style={layout.formGroup}>
               <label style={layout.label}>
                 项目类型
-                <FieldHint text="自定义接口：手动逐个添加 API 节点。OpenAPI 托管：通过 URL 或 JSON 导入规范文档自动生成节点" />
+                <FieldHint text="自定义接口：手动逐个添加 API 节点。OpenAPI 托管：通过 URL 或 JSON 导入规范文档自动生成节点。文件系统：将文件系统操作暴露为 MCP 工具" />
               </label>
               <select style={layout.select} value={type} onChange={(e) => setType(e.target.value as ProjectType)}>
                 <option value="custom">自定义接口</option>
                 <option value="openapi">OpenAPI 托管</option>
+                <option value="filesystem">文件系统 (File System)</option>
               </select>
             </div>
           )}
@@ -91,6 +118,34 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
                 onChange={(e) => setSourceUrl(e.target.value)}
                 placeholder="https://api.example.com/openapi.json"
               />
+            </div>
+          )}
+
+          {(type === 'filesystem' || (isEdit && project?.type === 'filesystem')) && (
+            <div style={layout.formGroup}>
+              <label style={layout.label}>
+                工作区根目录 (Workspace Root)
+                <FieldHint text="文件系统操作的作用域根路径。所有文件读写操作将被限制在此目录范围内。Docker 部署时填入容器内挂载路径，如 /data" />
+              </label>
+              <input
+                style={{
+                  ...layout.input,
+                  ...(formErrors.workspaceRoot ? { borderColor: 'var(--danger)', boxShadow: '0 0 0 3px var(--danger-soft)' } : {}),
+                }}
+                value={workspaceRoot}
+                onChange={(e) => {
+                  setWorkspaceRoot(e.target.value);
+                  if (formErrors.workspaceRoot) {
+                    setFormErrors((prev) => { const { workspaceRoot: _, ...rest } = prev; return rest; });
+                  }
+                }}
+                placeholder="/app/data（Docker 挂载路径）或 C:\Projects\my-app（本地路径）"
+              />
+              {formErrors.workspaceRoot && (
+                <span style={{ color: 'var(--danger)', fontSize: 12, marginTop: 4, display: 'block' }}>
+                  {formErrors.workspaceRoot}
+                </span>
+              )}
             </div>
           )}
           <div style={layout.formGroup}>

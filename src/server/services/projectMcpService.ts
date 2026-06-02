@@ -82,14 +82,13 @@ function createProjectServer(projectId: string, slug: string): McpServer {
     version: '0.1.0',
   });
 
-  // 获取该项目下已注册为 Tool 的节点
+  // 获取该项目下已注册为 Tool 的节点（所有类型项目统一处理）
   const allNodes = nodeService.listNodes(projectId);
   const toolNodes = allNodes.filter(
     (n) => n.slug && n.mcpToolEnabled && !n.hidden,
   );
 
   for (const node of toolNodes) {
-    // 构建 Zod schema
     const shape: Record<string, z.ZodTypeAny> = {};
     for (const param of node.params) {
       shape[param.key] = mapParamToZod(param);
@@ -121,8 +120,7 @@ function createProjectServer(projectId: string, slug: string): McpServer {
     }
   }
 
-  // McpServer 的 tools/list handler 是懒加载的——仅当至少注册过一个 tool 时才会初始化。
-  // 若项目尚无 Tool，注册占位工具以确保 tools/list 不返回 -32601。
+  // 占位工具
   if (toolNodes.length === 0) {
     server.tool(
       '_noop',

@@ -70,10 +70,11 @@ export const ProjectsPage: React.FC<ProjectsPageProps> = ({ onSelectProject }) =
     }
   };
 
-  const typeBadge = (type: string) =>
-    type === 'openapi'
-      ? { ...layout.badge, ...layout.badgePurple, children: 'OpenAPI' }
-      : { ...layout.badge, ...layout.badgeGreen, children: '自定义' };
+  const typeBadge = (type: string) => {
+    if (type === 'openapi') return { ...layout.badge, ...layout.badgePurple, children: 'OpenAPI' };
+    if (type === 'filesystem') return { ...layout.badge, ...layout.badgeAmber, children: '文件系统' };
+    return { ...layout.badge, ...layout.badgeGreen, children: '自定义' };
+  };
 
   return (
     <div>

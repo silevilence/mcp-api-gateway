@@ -9,6 +9,7 @@ interface CreateProjectInput {
   type: ProjectType;
   sourceUrl?: string;
   localJsonPath?: string;
+  workspaceRoot?: string;
 }
 
 interface UpdateProjectInput {
@@ -16,6 +17,7 @@ interface UpdateProjectInput {
   description?: string;
   sourceUrl?: string;
   localJsonPath?: string;
+  workspaceRoot?: string;
 }
 
 interface CreateNodeInput {
@@ -132,6 +134,45 @@ export const apiNodes = {
       `${API}/nodes/batch-mcp-register`,
       { method: 'POST', body: JSON.stringify({ nodeIds, enabled }) },
     ),
+};
+
+// ---- 文件系统 API ----
+export const fileSystemApi = {
+  glob: (projectId: string, pattern: string, path?: string) =>
+    request<import('@shared/types.js').FileSystemGlobResult>(`${API}/filesystem/glob`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, pattern, path }),
+    }),
+  ls: (projectId: string, path?: string, recursive?: boolean) =>
+    request<import('@shared/types.js').FileSystemLsResult>(`${API}/filesystem/ls`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, path, recursive }),
+    }),
+  grep: (projectId: string, pattern: string, path?: string, include?: string) =>
+    request<import('@shared/types.js').FileSystemGrepResult>(`${API}/filesystem/grep`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, pattern, path, include }),
+    }),
+  read: (projectId: string, file_path: string, offset?: number, limit?: number) =>
+    request<import('@shared/types.js').FileSystemReadResult>(`${API}/filesystem/read`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, file_path, offset, limit }),
+    }),
+  edit: (projectId: string, file_path: string, old_string: string, new_string: string, replace_all?: boolean) =>
+    request<import('@shared/types.js').FileSystemEditResult>(`${API}/filesystem/edit`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, file_path, old_string, new_string, replace_all }),
+    }),
+  write: (projectId: string, file_path: string, content: string) =>
+    request<{ success: boolean }>(`${API}/filesystem/write`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, file_path, content }),
+    }),
+  delete: (projectId: string, path: string, recursive?: boolean) =>
+    request<{ success: boolean }>(`${API}/filesystem/delete`, {
+      method: 'POST',
+      body: JSON.stringify({ projectId, path, recursive }),
+    }),
 };
 
 export const sandboxApi = {
