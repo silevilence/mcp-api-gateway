@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AiGatewayError, resolveClient, clearClientCache } from './aiGatewayService.js';
+import { AiGatewayError, resolveClient, clearClientCache, listProviderModels } from './aiGatewayService.js';
 import { initSettings, updateSettings } from './settingsStore.js';
 import type { AiProvider, AiModel } from '../../shared/types.js';
 
@@ -85,6 +85,33 @@ describe('aiGatewayService', () => {
       const r2 = resolveClient('m-test');
       expect(r1.provider).toBe(r2.provider);
     });
+
+    it('供应商不存在时应抛出 AiGatewayError (404)', () => {
+      updateSettings({
+        models: [makeModel({ id: 'm-orphan', providerId: 'nonexistent' })],
+      });
+      clearClientCache();
+      try {
+        resolveClient('m-orphan');
+        expect.fail('应抛出 AiGatewayError');
+      } catch (err) {
+        expect(err).toBeInstanceOf(AiGatewayError);
+        expect((err as AiGatewayError).code).toBe(404);
+      }
+    });
+
+    it('4 种合法供应商类型均应成功创建客户端', () => {
+      const validTypes = ['openai', 'google', 'anthropic', 'ollama'] as const;
+      for (const t of validTypes) {
+        updateSettings({
+          providers: [makeProvider({ id: `p-${t}`, type: t })],
+          models: [makeModel({ id: `m-${t}`, providerId: `p-${t}`, modelId: 'test' })],
+        });
+        clearClientCache();
+        const result = resolveClient(`m-${t}`);
+        expect(result).toBeDefined();
+      }
+    });
   });
 
   describe('clearClientCache', () => {
@@ -93,6 +120,27 @@ describe('aiGatewayService', () => {
       clearClientCache();
       const r2 = resolveClient('m-test');
       expect(r2).toBeDefined();
+    });
+  });
+
+  describe('listProviderModels', () => {
+    it('应返回指定供应商的所有模型', () => {
+      updateSettings({
+        models: [
+          makeModel({ id: 'm1', modelId: 'gpt-4o' }),
+          makeModel({ id: 'm2', modelId: 'gpt-4o-mini' }),
+        ],
+      });
+
+      const models = listProviderModels('p-test');
+      expect(models).toHaveLength(2);
+      expect(models[0].modelId).toBe('gpt-4o');
+      expect(models[1].modelId).toBe('gpt-4o-mini');
+    });
+
+    it('供应商不存在时应返回空数组', () => {
+      const models = listProviderModels('nonexistent');
+      expect(models).toEqual([]);
     });
   });
 });

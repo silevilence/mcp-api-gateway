@@ -61,8 +61,10 @@ function createClient(provider: AiProvider): ResolvedClient['provider'] {
 
   switch (provider.type) {
     case 'openai':
-    case 'ollama':
       return createOpenAI({ apiKey, baseURL });
+    case 'ollama':
+      // Ollama 本地服务无需真实 API Key，使用固定占位符满足 SDK 校验
+      return createOpenAI({ apiKey: 'ollama', baseURL });
     case 'google':
       return createGoogleGenerativeAI({ apiKey, baseURL });
     case 'anthropic':
