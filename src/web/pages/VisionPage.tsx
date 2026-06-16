@@ -6,7 +6,7 @@ import { layout } from '../styles.js';
 import { VISION_CAPABILITIES, createVisionNodeTemplate } from '@shared/types.js';
 import { nodesApi } from '../apiClient.js';
 import { useToast } from '../components/Toast.js';
-import type { ApiNode, ApiProject, VisionCapabilityMeta } from '@shared/types.js';
+import type { ApiNode, ApiProject, AiModel, VisionCapabilityMeta } from '@shared/types.js';
 
 interface VisionPageProps {
   project: ApiProject;
@@ -15,18 +15,27 @@ interface VisionPageProps {
 
 export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
   const [nodes, setNodes] = useState<ApiNode[]>([]);
+  const [visionModels, setVisionModels] = useState<AiModel[]>([]);
   const { showToast } = useToast();
 
-  const fetchNodes = useCallback(async () => {
+  // 加载节点 + 视觉模型列表
+  const fetchData = useCallback(async () => {
     try {
-      const res = await nodesApi.list(project.id);
-      if (res.code === 0) setNodes(res.data);
+      const [nodesRes, settingsRes] = await Promise.all([
+        nodesApi.list(project.id),
+        fetch('/api/settings').then((r) => r.json()),
+      ]);
+      if (nodesRes.code === 0) setNodes(nodesRes.data);
+      if (settingsRes.code === 0) {
+        const models = (settingsRes.data.models as AiModel[]).filter((m) => m.supportsVision);
+        setVisionModels(models);
+      }
     } catch {
-      showToast('加载节点列表失败', 'error');
+      showToast('加载数据失败', 'error');
     }
   }, [project.id, showToast]);
 
-  useEffect(() => { fetchNodes(); }, [fetchNodes]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const existingIds = new Set(nodes.map((n) => n.slug));
   const enabledSlugs = new Set(nodes.filter((n) => n.mcpToolEnabled && !n.hidden).map((n) => n.slug));
@@ -36,7 +45,7 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
     const res = await nodesApi.create(template as never);
     if (res.code === 0) {
       showToast(`能力「${cap.name}」已添加`, 'success');
-      fetchNodes();
+      fetchData();
     } else {
       showToast(res.message || '添加失败', 'error');
     }
@@ -46,7 +55,17 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
     const res = await nodesApi.update(node.id, { mcpToolEnabled: !node.mcpToolEnabled } as never);
     if (res.code === 0) {
       showToast(node.mcpToolEnabled ? '已关闭 MCP Tool' : '已启用 MCP Tool', 'success');
-      fetchNodes();
+      fetchData();
+    } else {
+      showToast(res.message, 'error');
+    }
+  };
+
+  const handleSetModel = async (node: ApiNode, modelId: string | null) => {
+    const res = await nodesApi.update(node.id, { boundModelId: modelId } as never);
+    if (res.code === 0) {
+      showToast(modelId ? '模型绑定成功' : '已清除模型绑定', 'success');
+      fetchData();
     } else {
       showToast(res.message, 'error');
     }
@@ -56,7 +75,7 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
     const res = await nodesApi.delete(nodeId);
     if (res.code === 0) {
       showToast('能力节点已删除', 'success');
-      fetchNodes();
+      fetchData();
     } else {
       showToast(res.message, 'error');
     }
@@ -74,9 +93,26 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
           </div>
           <p style={{ ...layout.pageSubtitle, marginTop: 4 }}>
             图像理解 (Vision Intelligence) · 共 {nodes.length} / {VISION_CAPABILITIES.length} 个能力已添加
+            {visionModels.length > 0 && (
+              <span style={{ marginLeft: 8, color: 'var(--text-muted)' }}>
+                · {visionModels.length} 个视觉模型可用
+              </span>
+            )}
           </p>
         </div>
       </div>
+
+      {visionModels.length === 0 && (
+        <div style={{ ...layout.card, marginBottom: 16, padding: 16, borderLeft: '3px solid var(--warning)' }}>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>
+            ⚠️ 尚未配置任何视觉模型。请先前往
+            <button style={{ ...layout.btn, fontSize: 12, margin: '0 4px', display: 'inline', padding: '2px 8px' }} onClick={() => window.location.href = '/?settings'}>
+              全局设置
+            </button>
+            添加支持视觉能力的 AI 模型。
+          </p>
+        </div>
+      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {VISION_CAPABILITIES.map((cap) => {
@@ -108,7 +144,7 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
                 <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>
                   {cap.description}
                 </p>
-                <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                <div style={{ display: 'flex', gap: 4, marginTop: 6, flexWrap: 'wrap' }}>
                   {cap.params.map((p) => (
                     <span key={p.key} style={{
                       fontSize: 10,
@@ -127,6 +163,19 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
               <div style={{ display: 'flex', gap: 8, marginLeft: 16, alignItems: 'center' }}>
                 {isAdded && node ? (
                   <>
+                    {/* 模型选择 */}
+                    <select
+                      style={{ ...layout.select, fontSize: 12, width: 'auto', maxWidth: 180 }}
+                      value={node.boundModelId ?? ''}
+                      onChange={(e) => handleSetModel(node, e.target.value || null)}
+                    >
+                      <option value="">自动选择</option>
+                      {visionModels.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.displayName || m.modelId}
+                        </option>
+                      ))}
+                    </select>
                     <button
                       style={{
                         ...layout.btn,

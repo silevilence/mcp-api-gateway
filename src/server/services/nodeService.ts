@@ -37,6 +37,7 @@ export interface UpdateNodeInput {
   remark?: string;
   slug?: string;
   mcpToolEnabled?: boolean;
+  boundModelId?: string | null;
 }
 
 export { isNodeSlugUnique, validateSlug, generateSlug };
@@ -115,6 +116,7 @@ export function updateNode(id: string, input: UpdateNodeInput): ApiNode | null {
     remark: input.remark !== undefined ? input.remark : existing.remark,
     slug,
     mcpToolEnabled: input.mcpToolEnabled !== undefined ? input.mcpToolEnabled : existing.mcpToolEnabled,
+    boundModelId: input.boundModelId !== undefined ? input.boundModelId ?? undefined : existing.boundModelId,
     updatedAt: now(),
   };
   store.updateNode(id, updated);

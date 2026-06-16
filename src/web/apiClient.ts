@@ -39,6 +39,7 @@ interface UpdateNodeInput {
   params?: ApiParam[];
   group?: string;
   remark?: string;
+  boundModelId?: string | null;
 }
 
 const BASE = '/internal';
