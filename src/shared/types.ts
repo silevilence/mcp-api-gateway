@@ -80,6 +80,120 @@ export const FILE_SYSTEM_CAPABILITIES: FileSystemCapabilityMeta[] = [
   },
 ];
 
+// ---- 视觉智能能力元数据常量 ----
+export type VisionCapability =
+  | 'ui_to_artifact'
+  | 'ocr'
+  | 'ui_diff_check'
+  | 'image_analysis'
+  | 'video_analysis';
+
+export interface VisionParam {
+  key: string;
+  type: 'string' | 'number' | 'boolean';
+  required: boolean;
+  description: string;
+  defaultValue?: unknown;
+}
+
+export interface VisionCapabilityMeta {
+  id: VisionCapability;
+  name: string;
+  description: string;
+  danger: boolean;
+  params: VisionParam[];
+}
+
+export const VISION_CAPABILITIES: VisionCapabilityMeta[] = [
+  {
+    id: 'ui_to_artifact',
+    name: 'UI 视觉资产还原',
+    description: '将 UI 视觉资源深度转化为前端代码、高保真提示词、系统级设计规范或多维自然语言描述，覆盖从设计稿到生产力落地的全生命周期。',
+    danger: false,
+    params: [
+      { key: 'image', type: 'string', required: true, description: '主分析目标图像 (Base64 或 URL)' },
+      { key: 'type', type: 'string', required: true, description: '目标产物生成策略: Code | Prompt | Spec | Description' },
+      { key: 'prompt', type: 'string', required: false, description: '自定义提示词，用于精细化引导理解重点及输出约束' },
+      { key: 'stream', type: 'boolean', required: false, description: '是否启用流式响应（默认：false）', defaultValue: false },
+    ],
+  },
+  {
+    id: 'ocr',
+    name: '智能文本提取',
+    description: '基于大模型多模态视觉感知能力，提取并识别输入图像中的结构化文本信息，支持多语言与复杂布局排版。',
+    danger: false,
+    params: [
+      { key: 'image', type: 'string', required: true, description: '主分析目标图像 (Base64 或 URL)' },
+      { key: 'prompt', type: 'string', required: false, description: '自定义提示词' },
+      { key: 'stream', type: 'boolean', required: false, description: '是否启用流式响应（默认：false）', defaultValue: false },
+    ],
+  },
+  {
+    id: 'ui_diff_check',
+    name: 'UI 视觉一致性稽查',
+    description: '对比基准图与对比图之间的像素级、布局级差异，输出视觉偏差与缺陷报告，专注于 UI 质量保障 (QA) 与还原度验证。',
+    danger: false,
+    params: [
+      { key: 'base_image', type: 'string', required: true, description: '设计基准图 (Base64 或 URL)（必填，替代标准 image 字段）' },
+      { key: 'compare_image', type: 'string', required: true, description: '实现对比图 (Base64 或 URL)（必填）' },
+      { key: 'prompt', type: 'string', required: false, description: '自定义提示词' },
+      { key: 'stream', type: 'boolean', required: false, description: '是否启用流式响应（默认：false）', defaultValue: false },
+    ],
+  },
+  {
+    id: 'image_analysis',
+    name: '通用图像解构',
+    description: '泛化多模态图像感知能力，处理并解析非特定垂直场景下的日常通用视觉内容与复杂语境。',
+    danger: false,
+    params: [
+      { key: 'image', type: 'string', required: true, description: '主分析目标图像 (Base64 或 URL)' },
+      { key: 'prompt', type: 'string', required: false, description: '自定义提示词' },
+      { key: 'stream', type: 'boolean', required: false, description: '是否启用流式响应（默认：false）', defaultValue: false },
+    ],
+  },
+  {
+    id: 'video_analysis',
+    name: '视频动态场景分析',
+    description: '支持 MP4/MOV/M4V 等主流格式（限制本地文件体积 ≤ 8MB）的视频解析，实现关键帧抽取、动态事件捕获与核心要点生成。',
+    danger: false,
+    params: [
+      { key: 'video_file', type: 'string', required: true, description: '视频文件载荷 (Base64 或 URL)（必填，无标准 image 输入）' },
+      { key: 'prompt', type: 'string', required: false, description: '自定义提示词' },
+      { key: 'stream', type: 'boolean', required: false, description: '是否启用流式响应（默认：false）', defaultValue: false },
+    ],
+  },
+];
+
+// ---- AI 供应商与模型设置类型 ----
+export type ProviderType = 'openai' | 'google' | 'anthropic' | 'ollama';
+
+export interface AiProvider {
+  id: string;
+  name: string;
+  type: ProviderType;
+  baseUrl: string;
+  apiKey: string;
+  enabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiModel {
+  id: string;
+  providerId: string;
+  modelId: string;
+  displayName: string;
+  supportsVision: boolean;
+  supportsThinking: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GlobalSettings {
+  providers: AiProvider[];
+  models: AiModel[];
+}
+
 // ---- API 统一响应信封 ----
 export interface ApiResponse<T = unknown> {
   code: number;
@@ -108,7 +222,7 @@ export interface ApiProject {
   updatedAt: string;
 }
 
-export type ProjectType = 'custom' | 'openapi' | 'filesystem';
+export type ProjectType = 'custom' | 'openapi' | 'filesystem' | 'vision';
 
 // ---- API 节点 ----
 export interface ApiNode {
@@ -153,7 +267,7 @@ export interface ApiParam {
 export type ParamType = 'string' | 'number' | 'integer' | 'boolean' | 'date' | 'object' | 'array';
 export type ParamLocation = 'query' | 'path' | 'body' | 'formData';
 
-export type NodeSource = 'custom' | 'openapi' | 'filesystem';
+export type NodeSource = 'custom' | 'openapi' | 'filesystem' | 'vision';
 
 // ---- 文件系统能力枚举 ----
 export type FileSystemCapability =
