@@ -112,6 +112,7 @@ nodeRouter.put('/:id', (req: Request, res: Response) => {
     remark: body.remark !== undefined ? (typeof body.remark === 'string' ? body.remark : undefined) : undefined,
     slug: typeof body.slug === 'string' ? body.slug : body.slug === '' ? '' : undefined,
     mcpToolEnabled: typeof body.mcpToolEnabled === 'boolean' ? body.mcpToolEnabled : undefined,
+    boundModelId: body.boundModelId !== undefined ? (typeof body.boundModelId === 'string' ? body.boundModelId : null) : undefined,
   });
 
   if (!updated) {
