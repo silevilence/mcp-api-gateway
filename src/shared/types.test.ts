@@ -3,7 +3,7 @@
 // ============================================================
 import { describe, it, expect } from 'vitest';
 import { VISION_CAPABILITIES, type VisionCapability } from './types.js';
-import type { ApiResponse, ApiProject, ApiNode } from './types.js';
+import type { ApiResponse, ApiProject, ApiNode, AiProvider, AiModel, GlobalSettings, ProviderType } from './types.js';
 
 describe('共享类型契约', () => {
   it('ApiResponse<T> 应具备 code / message / data 字段', () => {
@@ -125,5 +125,53 @@ describe('VISION_CAPABILITIES', () => {
     const typeParam = tool.params.find((p) => p.key === 'type');
     expect(typeParam).toBeDefined();
     expect(typeParam!.required).toBe(true);
+  });
+});
+
+describe('AI 供应商与模型类型', () => {
+  it('ProviderType 联合类型仅接受合法值', () => {
+    // 编译期类型检查 — 运行时验证类型系统一致性
+    const validTypes: ProviderType[] = ['openai', 'google', 'anthropic', 'ollama'];
+    expect(validTypes).toHaveLength(4);
+  });
+
+  it('AiProvider 应包含所有必填字段', () => {
+    const p: AiProvider = {
+      id: 'p1',
+      name: 'Test',
+      type: 'openai',
+      baseUrl: 'https://example.com',
+      apiKey: 'sk-test',
+      enabled: true,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    expect(p.id).toBe('p1');
+    expect(p.type).toBe('openai');
+    expect(p.enabled).toBe(true);
+  });
+
+  it('AiModel 应包含 supportsVision/supportsThinking 布尔字段', () => {
+    const m: AiModel = {
+      id: 'm1',
+      providerId: 'p1',
+      modelId: 'gpt-4o',
+      displayName: 'GPT-4o',
+      supportsVision: true,
+      supportsThinking: false,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    };
+    expect(m.supportsVision).toBe(true);
+    expect(m.supportsThinking).toBe(false);
+  });
+
+  it('GlobalSettings 应正确包裹 providers 和 models 数组', () => {
+    const settings: GlobalSettings = {
+      providers: [],
+      models: [],
+    };
+    expect(Array.isArray(settings.providers)).toBe(true);
+    expect(Array.isArray(settings.models)).toBe(true);
   });
 });

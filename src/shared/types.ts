@@ -88,6 +88,7 @@ export type VisionCapability =
   | 'image_analysis'
   | 'video_analysis';
 
+/** 视觉工具参数定义（结构与 FileSystemParam 保持一致，独立定义以避免视觉/文件系统参数未来演进分化） */
 export interface VisionParam {
   key: string;
   type: 'string' | 'number' | 'boolean';
@@ -206,7 +207,7 @@ export interface ApiProject {
   id: string;
   name: string;
   description: string;
-  /** 项目类型：custom = 自定义接口, openapi = OpenAPI 托管 */
+  /** 项目类型：custom = 自定义接口, openapi = OpenAPI 托管, filesystem = 文件系统, vision = 图像理解 */
   type: ProjectType;
   /** OpenAPI 远程 URL（openapi 类型专用） */
   sourceUrl?: string;
