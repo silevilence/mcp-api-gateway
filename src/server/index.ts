@@ -15,6 +15,8 @@ import {
   sandboxRouter,
   fileSystemRouter,
   projectMcpRouter,
+  settingsRouter,
+  visionRouter,
 } from './routes/index.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { requestLogger } from './middleware/requestLogger.js';
@@ -46,6 +48,8 @@ app.use('/api/audit-logs', apiAuditRouter);
 app.use('/api/mcp', mcpRouter);
 app.use('/api/sandbox', sandboxRouter);
 app.use('/api/filesystem', fileSystemRouter);
+app.use('/api/settings', settingsRouter);
+app.use('/api/vision', visionRouter);
 // 项目级 MCP：动态路由 /api/:slug/mcp（必须在所有 /api/* 路由之后）
 app.use('/api/:slug/mcp', projectMcpRouter);
 

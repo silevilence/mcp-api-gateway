@@ -7,3 +7,5 @@ export { apiAuditRouter } from './audit.js';
 export { mcpRouter } from './mcp.js';
 export { sandboxRouter } from './sandbox.js';
 export { fileSystemRouter } from './fileSystem.js';
+export { visionRouter } from './vision.js';
+export { settingsRouter } from './settings.js';

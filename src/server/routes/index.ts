@@ -15,5 +15,7 @@ export {
   mcpRouter,
   sandboxRouter,
   fileSystemRouter,
+  visionRouter,
+  settingsRouter,
 } from './api/index.js';
 export { projectMcpRouter } from './api/projectMcp.js';
