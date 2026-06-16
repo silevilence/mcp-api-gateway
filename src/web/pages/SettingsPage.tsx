@@ -73,6 +73,13 @@ export const SettingsPage: React.FC = () => {
     providerId: '', modelId: '', displayName: '', supportsVision: false, supportsThinking: false,
   });
 
+  // ---- 模型发现状态 ----
+  const [showFetchModels, setShowFetchModels] = useState(false);
+  const [fetchingProviderId, setFetchingProviderId] = useState<string>('');
+  const [discoveredModels, setDiscoveredModels] = useState<Array<{ id: string; owned_by?: string; alreadyAdded: boolean }>>([]);
+  const [selectedModelIds, setSelectedModelIds] = useState<Set<string>>(new Set());
+  const [fetchingModels, setFetchingModels] = useState(false);
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     try {
@@ -197,6 +204,81 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
+  // ---- 模型发现 ----
+  const openFetchModels = (providerId: string) => {
+    setFetchingProviderId(providerId);
+    setDiscoveredModels([]);
+    setSelectedModelIds(new Set());
+    setShowFetchModels(true);
+    fetchProviderModels(providerId);
+  };
+
+  const fetchProviderModels = async (providerId: string) => {
+    setFetchingModels(true);
+    try {
+      const res = await fetch(`/api/settings/providers/${providerId}/models/fetch`);
+      const json = await res.json();
+      if (json.code !== 0) throw new Error(json.message);
+      setDiscoveredModels(json.data);
+    } catch (err: unknown) {
+      showToast((err as Error).message || '获取模型列表失败', 'error');
+    } finally {
+      setFetchingModels(false);
+    }
+  };
+
+  const toggleModelSelection = (modelId: string) => {
+    setSelectedModelIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(modelId)) next.delete(modelId);
+      else next.add(modelId);
+      return next;
+    });
+  };
+
+  const selectAllModels = () => {
+    const notAdded = discoveredModels.filter((m) => !m.alreadyAdded);
+    setSelectedModelIds(new Set(notAdded.map((m) => m.id)));
+  };
+
+  const deselectAllModels = () => {
+    setSelectedModelIds(new Set());
+  };
+
+  const addSelectedModels = async () => {
+    if (selectedModelIds.size === 0) {
+      showToast('请至少选择一个模型', 'error');
+      return;
+    }
+    try {
+      const now = new Date().toISOString();
+      const newModels: AiModel[] = [];
+      for (const id of selectedModelIds) {
+        const discovered = discoveredModels.find((m) => m.id === id);
+        if (discovered && !discovered.alreadyAdded) {
+          newModels.push({
+            id: crypto.randomUUID(),
+            providerId: fetchingProviderId,
+            modelId: discovered.id,
+            displayName: discovered.owned_by ? `${discovered.owned_by} / ${discovered.id}` : discovered.id,
+            supportsVision: false,
+            supportsThinking: false,
+            createdAt: now,
+            updatedAt: now,
+          });
+        }
+      }
+
+      const models = [...settings.models, ...newModels];
+      await saveSettings({ models });
+      showToast(`已添加 ${newModels.length} 个模型`, 'success');
+      setShowFetchModels(false);
+      loadSettings();
+    } catch (err: unknown) {
+      showToast((err as Error).message, 'error');
+    }
+  };
+
   // ---- 渲染 ----
   const providerTypeBadge = (type: ProviderType) => {
     const colors: Record<ProviderType, React.CSSProperties> = {
@@ -300,9 +382,18 @@ export const SettingsPage: React.FC = () => {
           <div style={layout.card}>
             <div style={{ ...layout.cardHeader, borderBottom: '1px solid var(--border-default)', paddingBottom: 16, marginBottom: 16 }}>
               <h2 style={{ fontSize: 16, fontWeight: 600 }}>模型清单</h2>
-              <button style={{ ...layout.btn, ...layout.btnPrimary, fontSize: 13 }} onClick={openNewModel}>
-                + 手动添加
-              </button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button style={{ ...layout.btn, fontSize: 13 }} onClick={() => {
+                  const pid = settings.providers[0]?.id;
+                  if (pid) openFetchModels(pid);
+                  else showToast('请先添加供应商', 'error');
+                }}>
+                  从供应商拉取
+                </button>
+                <button style={{ ...layout.btn, ...layout.btnPrimary, fontSize: 13 }} onClick={openNewModel}>
+                  + 手动添加
+                </button>
+              </div>
             </div>
 
             {settings.providers.map((provider) => {
@@ -521,6 +612,99 @@ export const SettingsPage: React.FC = () => {
                     </button>
                   </div>
                 </form>
+              </div>
+            </div>
+          )}
+
+          {/* ---- 模型拉取弹窗 ---- */}
+          {showFetchModels && (
+            <div style={layout.modalOverlay} onClick={() => setShowFetchModels(false)}>
+              <div style={{ ...layout.modalContent, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
+                <h3 style={{ margin: '0 0 4px 0', fontSize: 18, fontWeight: 700 }}>从供应商拉取模型</h3>
+                <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>供应商：</span>
+                  <select
+                    style={{ ...layout.select, width: 'auto', flex: 1 }}
+                    value={fetchingProviderId}
+                    onChange={(e) => {
+                      const pid = e.target.value;
+                      setFetchingProviderId(pid);
+                      fetchProviderModels(pid);
+                    }}
+                  >
+                    {settings.providers.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} ({p.type})</option>
+                    ))}
+                  </select>
+                </div>
+
+                {fetchingModels ? (
+                  <div style={{ padding: '40px 0', textAlign: 'center' }}>
+                    <div className="skeleton" style={{ width: '60%', height: 16, margin: '0 auto 8px' }} />
+                    <div className="skeleton" style={{ width: '40%', height: 14, margin: '0 auto' }} />
+                    <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 16 }}>正在从供应商拉取模型列表…</p>
+                  </div>
+                ) : discoveredModels.length === 0 ? (
+                  <div style={{ padding: '32px 0', textAlign: 'center', color: 'var(--text-muted)' }}>
+                    <p style={{ fontSize: 14 }}>未获取到模型，请检查供应商配置</p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                      <button style={{ ...layout.btn, fontSize: 12 }} onClick={selectAllModels}>全选</button>
+                      <button style={{ ...layout.btn, fontSize: 12 }} onClick={deselectAllModels}>取消全选</button>
+                      <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-muted)', alignSelf: 'center' }}>
+                        已选 {selectedModelIds.size} / {discoveredModels.filter((m) => !m.alreadyAdded).length} 个新模型
+                      </span>
+                    </div>
+                    <div style={{ maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {discoveredModels.map((m) => (
+                        <label
+                          key={m.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            padding: '8px 12px',
+                            borderRadius: 'var(--radius-sm)',
+                            background: selectedModelIds.has(m.id) ? 'var(--accent-soft)' : 'var(--bg-elevated)',
+                            border: `1px solid ${selectedModelIds.has(m.id) ? 'var(--accent)' : 'var(--border-muted)'}`,
+                            cursor: m.alreadyAdded ? 'default' : 'pointer',
+                            opacity: m.alreadyAdded ? 0.5 : 1,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedModelIds.has(m.id)}
+                            disabled={m.alreadyAdded}
+                            onChange={() => toggleModelSelection(m.id)}
+                          />
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 500 }}>{m.id}</span>
+                          {m.owned_by && (
+                            <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.owned_by}</span>
+                          )}
+                          {m.alreadyAdded && (
+                            <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--success)', background: 'var(--success-soft)', padding: '1px 8px', borderRadius: 4 }}>
+                              已添加
+                            </span>
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
+                  <button type="button" style={layout.btn} onClick={() => setShowFetchModels(false)}>取消</button>
+                  <button
+                    type="button"
+                    style={{ ...layout.btn, ...layout.btnPrimary }}
+                    onClick={addSelectedModels}
+                    disabled={selectedModelIds.size === 0 || fetchingModels}
+                  >
+                    添加选中 ({selectedModelIds.size})
+                  </button>
+                </div>
               </div>
             </div>
           )}

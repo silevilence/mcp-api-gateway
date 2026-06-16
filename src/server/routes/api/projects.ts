@@ -36,8 +36,8 @@ apiProjectRouter.post('/', (req: Request, res: Response) => {
     return;
   }
 
-  if (type !== 'custom' && type !== 'openapi' && type !== 'filesystem') {
-    const body: ApiResponse = { code: 400, message: '项目类型 (type) 必须为 custom、openapi 或 filesystem', data: null };
+  if (type !== 'custom' && type !== 'openapi' && type !== 'filesystem' && type !== 'vision') {
+    const body: ApiResponse = { code: 400, message: '项目类型 (type) 必须为 custom、openapi、filesystem 或 vision', data: null };
     res.status(400).json(body);
     return;
   }
