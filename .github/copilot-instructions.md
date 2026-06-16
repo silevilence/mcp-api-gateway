@@ -82,3 +82,15 @@
 ### 6.2 Git 操作权限隔离
 - **禁止写入（Write）**：绝对禁止自动执行任何改变 Git 状态的操作（严禁调用 `git add`、`git commit`、`git push`、`git checkout` 等命令）。所有代码库的变更同步操作完全由用户手动完成。
 - **允许读取（Read）**：允许且仅允许使用安全的只读命令（如 `git status`、`git diff`、`git log`）来获取代码变更上下文。
+
+### 6.3 提交信息规范 (Commit Message Convention)
+- 所有 Git 提交信息必须使用 Emoji 前缀，与项目现有提交历史保持一致风格。标准映射如下：
+  - `✨` — 新功能 (feat)
+  - `🐛` — 修复 (fix)
+  - `🔧` — 工程配置/依赖 (chore)
+  - `💎` — 样式/UI 优化 (style)
+  - `♻️` — 重构 (refactor)
+  - `🚨` — 测试 (test)
+  - `📚` — 文档 (docs)
+- 格式示例：`✨ feat(routes): add /api/settings endpoint`、`🐛 fix(settingsStore): prevent double-encryption on round-trip`
+- 提交信息应使用中文编写，scope（可选）用小写括号表示，描述用祈使句。
