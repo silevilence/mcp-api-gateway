@@ -103,6 +103,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
                 <option value="custom">自定义接口</option>
                 <option value="openapi">OpenAPI 托管</option>
                 <option value="filesystem">文件系统 (File System)</option>
+                <option value="vision">图像理解 (Vision Intelligence)</option>
               </select>
             </div>
           )}

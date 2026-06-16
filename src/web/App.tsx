@@ -6,11 +6,12 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { ProjectsPage } from './pages/ProjectsPage.js';
 import { NodesPage } from './pages/NodesPage.js';
 import { FileSystemPage } from './pages/FileSystemPage.js';
+import { SettingsPage } from './pages/SettingsPage.js';
 import { ToastProvider } from './components/Toast.js';
 import { layout } from './styles.js';
 import type { ApiProject } from '@shared/types.js';
 
-type View = 'dashboard' | 'projects' | 'nodes' | 'filesystem';
+type View = 'dashboard' | 'projects' | 'nodes' | 'filesystem' | 'settings';
 
 export const App: React.FC = () => {
   const [view, setView] = useState<View>('dashboard');
@@ -45,6 +46,10 @@ export const App: React.FC = () => {
             <button style={sidebarItemStyle('projects')} onClick={() => navigate('projects')}>
               <span style={layout.sidebarItemIcon}>⊟</span>
               API 项目集
+            </button>
+            <button style={sidebarItemStyle('settings')} onClick={() => navigate('settings')}>
+              <span style={layout.sidebarItemIcon}>⚙️</span>
+              设置
             </button>
             {(view === 'nodes' || view === 'filesystem') && selectedProject && (
               <button style={{ ...layout.sidebarItem, ...layout.sidebarItemActive }}>
@@ -85,6 +90,7 @@ export const App: React.FC = () => {
                 onBack={() => navigate('projects')}
               />
             )}
+            {view === 'settings' && <SettingsPage />}
           </div>
         </main>
       </div>
