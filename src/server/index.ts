@@ -23,6 +23,7 @@ import { requestLogger } from './middleware/requestLogger.js';
 import { rateLimiter } from './middleware/rateLimiter.js';
 import { rotateLogs } from './services/auditService.js';
 import * as store from './services/store.js';
+import { initSettings } from './services/settingsStore.js';
 
 const PORT = process.env.PORT ?? 3000;
 
@@ -65,6 +66,7 @@ setInterval(() => {
 // ---- 启动：先加载持久化数据，再监听端口 ----
 (async () => {
   await store.init();
+  await initSettings();
 
   app.listen(PORT, () => {
     console.log(`[server] API Gateway 已启动 → http://localhost:${PORT}`);
