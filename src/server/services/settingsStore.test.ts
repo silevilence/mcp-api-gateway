@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync, unlinkSync, mkdirSync } from 'node:fs';
+import { existsSync, unlinkSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   initSettings,
@@ -8,6 +8,7 @@ import {
   getProvider,
   getModelsByProvider,
   getDecryptedApiKey,
+  maskApiKey,
 } from './settingsStore.js';
 import type { GlobalSettings } from '../../shared/types.js';
 
@@ -54,6 +55,17 @@ describe('settingsStore', () => {
       const settings = getSettings();
       expect(settings.providers).toHaveLength(1);
       expect(settings.providers[0].name).toBe('Test');
+    });
+
+    it('JSON 文件损坏时应降级为空配置', async () => {
+      const dir = join(process.cwd(), '.data');
+      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, 'settings.json'), '{ corrupted json!!!');
+
+      await initSettings();
+      const settings = getSettings();
+      expect(settings.providers).toEqual([]);
+      expect(settings.models).toEqual([]);
     });
   });
 
@@ -168,6 +180,23 @@ describe('settingsStore', () => {
       });
 
       expect(getModelsByProvider('p2')).toEqual([]);
+    });
+  });
+
+  describe('maskApiKey', () => {
+    it('应脱敏标准长度密钥', () => {
+      const result = maskApiKey('sk-very-long-api-key-12345678');
+      expect(result).toBe('sk-****5678');
+      expect(result).not.toContain('very-long');
+    });
+
+    it('应脱敏短密钥', () => {
+      const result = maskApiKey('abc');
+      expect(result).toBe('sk-****abc');
+    });
+
+    it('空字符串应返回 sk-****', () => {
+      expect(maskApiKey('')).toBe('sk-****');
     });
   });
 });
