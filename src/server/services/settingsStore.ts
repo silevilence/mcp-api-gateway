@@ -96,8 +96,10 @@ export async function initSettings(): Promise<void> {
       const parsed = JSON.parse(raw) as GlobalSettings;
       settings.providers = Array.isArray(parsed.providers) ? parsed.providers : [];
       settings.models = Array.isArray(parsed.models) ? parsed.models : [];
+      console.log(`[settingsStore] ✓ 已加载 ${settings.providers.length} 个供应商、${settings.models.length} 个模型`);
     } else {
       settings = { providers: [], models: [] };
+      console.log('[settingsStore] ℹ️ settings.json 不存在，使用空配置');
     }
   } catch (err) {
     console.warn('[settingsStore] 加载设置失败，使用空配置:', (err as Error).message);
