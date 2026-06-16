@@ -470,7 +470,7 @@ export const SettingsPage: React.FC = () => {
 
           {/* ---- 供应商编辑弹窗 ---- */}
           {showProviderForm && (
-            <div style={layout.modalOverlay} onClick={() => setShowProviderForm(false)}>
+            <div style={layout.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setShowProviderForm(false); }}>
               <div style={layout.modalContent} onClick={(e) => e.stopPropagation()}>
                 <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700 }}>
                   {editingProviderId ? '编辑供应商' : '添加供应商'}
@@ -549,7 +549,7 @@ export const SettingsPage: React.FC = () => {
 
           {/* ---- 模型编辑弹窗 ---- */}
           {showModelForm && (
-            <div style={layout.modalOverlay} onClick={() => setShowModelForm(false)}>
+            <div style={layout.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setShowModelForm(false); }}>
               <div style={layout.modalContent} onClick={(e) => e.stopPropagation()}>
                 <h3 style={{ margin: '0 0 20px 0', fontSize: 18, fontWeight: 700 }}>
                   {editingModelId ? '编辑模型' : '添加模型'}
@@ -618,7 +618,7 @@ export const SettingsPage: React.FC = () => {
 
           {/* ---- 模型拉取弹窗 ---- */}
           {showFetchModels && (
-            <div style={layout.modalOverlay} onClick={() => setShowFetchModels(false)}>
+            <div style={layout.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) setShowFetchModels(false); }}>
               <div style={{ ...layout.modalContent, maxWidth: 560 }} onClick={(e) => e.stopPropagation()}>
                 <h3 style={{ margin: '0 0 4px 0', fontSize: 18, fontWeight: 700 }}>从供应商拉取模型</h3>
                 <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>

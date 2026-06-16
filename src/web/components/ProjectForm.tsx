@@ -51,7 +51,7 @@ export const ProjectForm: React.FC<ProjectFormProps> = ({ project, onSubmit, onC
   };
 
   return createPortal(
-    <div style={layout.modalOverlay} onClick={onCancel}>
+    <div style={layout.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div style={layout.modalContent} onClick={(e) => e.stopPropagation()}>
         <h3 style={{ margin: '0 0 24px 0', fontSize: 18, fontWeight: 700 }}>
           {isEdit ? '编辑项目' : '新建项目'}

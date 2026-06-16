@@ -58,6 +58,15 @@ export function createNode(input: CreateNodeInput): ApiNode | { error: string } 
     return { error: `项目 ${input.projectId} 不存在` };
   }
 
+  // 根据项目类型确定节点来源
+  let source: ApiNode['source'];
+  switch (project.type) {
+    case 'filesystem': source = 'filesystem'; break;
+    case 'vision': source = 'vision'; break;
+    case 'openapi': source = 'openapi'; break;
+    default: source = 'custom';
+  }
+
   let slug = input.slug?.trim() || generateSlug(input.name) || undefined;
 
   const node: ApiNode = {
@@ -71,7 +80,7 @@ export function createNode(input: CreateNodeInput): ApiNode | { error: string } 
     hidden: false,
     group: input.group,
     remark: input.remark,
-    source: 'custom',
+    source,
     slug,
     mcpToolEnabled: false,
     createdAt: now(),

@@ -6,19 +6,20 @@ import { DashboardPage } from './pages/DashboardPage.js';
 import { ProjectsPage } from './pages/ProjectsPage.js';
 import { NodesPage } from './pages/NodesPage.js';
 import { FileSystemPage } from './pages/FileSystemPage.js';
+import { VisionPage } from './pages/VisionPage.js';
 import { SettingsPage } from './pages/SettingsPage.js';
 import { ToastProvider } from './components/Toast.js';
 import { layout } from './styles.js';
 import type { ApiProject } from '@shared/types.js';
 
-type View = 'dashboard' | 'projects' | 'nodes' | 'filesystem' | 'settings';
+type View = 'dashboard' | 'projects' | 'nodes' | 'filesystem' | 'vision' | 'settings';
 
 export const App: React.FC = () => {
   const [view, setView] = useState<View>('dashboard');
   const [selectedProject, setSelectedProject] = useState<ApiProject | null>(null);
 
   const navigate = (v: View, project?: ApiProject) => {
-    if ((v === 'nodes' || v === 'filesystem') && project) setSelectedProject(project);
+    if ((v === 'nodes' || v === 'filesystem' || v === 'vision') && project) setSelectedProject(project);
     else setSelectedProject(null);
     setView(v);
   };
@@ -51,10 +52,10 @@ export const App: React.FC = () => {
               <span style={layout.sidebarItemIcon}>⚙️</span>
               设置
             </button>
-            {(view === 'nodes' || view === 'filesystem') && selectedProject && (
+            {(view === 'nodes' || view === 'filesystem' || view === 'vision') && selectedProject && (
               <button style={{ ...layout.sidebarItem, ...layout.sidebarItemActive }}>
                 <span style={layout.sidebarItemIcon}>
-                  {selectedProject.type === 'filesystem' ? '📁' : '↳'}
+                  {selectedProject.type === 'filesystem' ? '📁' : selectedProject.type === 'vision' ? '👁' : '↳'}
                 </span>
                 {selectedProject.name}
               </button>
@@ -73,7 +74,7 @@ export const App: React.FC = () => {
             {view === 'projects' && (
               <ProjectsPage
                 onSelectProject={(p) => navigate(
-                  p.type === 'filesystem' ? 'filesystem' : 'nodes',
+                  p.type === 'filesystem' ? 'filesystem' : p.type === 'vision' ? 'vision' : 'nodes',
                   p,
                 )}
               />
@@ -86,6 +87,12 @@ export const App: React.FC = () => {
             )}
             {view === 'filesystem' && selectedProject && (
               <FileSystemPage
+                project={selectedProject}
+                onBack={() => navigate('projects')}
+              />
+            )}
+            {view === 'vision' && selectedProject && (
+              <VisionPage
                 project={selectedProject}
                 onBack={() => navigate('projects')}
               />

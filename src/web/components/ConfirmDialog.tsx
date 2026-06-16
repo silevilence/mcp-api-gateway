@@ -23,7 +23,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onCancel,
 }) => {
   return createPortal(
-    <div style={layout.modalOverlay} onClick={onCancel}>
+    <div style={layout.modalOverlay} onMouseDown={(e) => { if (e.target === e.currentTarget) onCancel(); }}>
       <div style={{ ...layout.modalContent, minWidth: 400 }} onClick={(e) => e.stopPropagation()}>
         <div style={{ fontSize: 32, marginBottom: 12, textAlign: 'center', opacity: 0.6 }}>
           {danger ? '⚠' : 'ℹ'}
