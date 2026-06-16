@@ -82,9 +82,19 @@ export function updateSettings(patch: Partial<GlobalSettings>): GlobalSettings {
   if (patch.providers !== undefined) {
     settings.providers = patch.providers.map((p) => ({
       ...p,
-      apiKey: p.apiKey && !p.apiKey.startsWith('sk-****')
-        ? encrypt(p.apiKey)
-        : settings.providers.find((sp) => sp.id === p.id)?.apiKey ?? encrypt(p.apiKey),
+      apiKey: (() => {
+        if (!p.apiKey) return p.apiKey;
+        // 占位符（前端脱敏值）→ 保持原加密值不变
+        if (p.apiKey.startsWith('sk-****')) {
+          return settings.providers.find((sp) => sp.id === p.id)?.apiKey ?? p.apiKey;
+        }
+        // 已是加密格式 (hex:hex:hex) → 无需二次加密
+        if (/^[0-9a-f]+:[0-9a-f]+:[0-9a-f]+$/i.test(p.apiKey)) {
+          return p.apiKey;
+        }
+        // 明文 → 加密存储
+        return encrypt(p.apiKey);
+      })(),
     }));
   }
   if (patch.models !== undefined) {
@@ -113,6 +123,7 @@ export function getDecryptedApiKey(providerId: string): string | undefined {
 }
 
 export function maskApiKey(key: string): string {
-  if (!key || key.length <= 8) return '****';
-  return `sk-****${key.slice(-4)}`;
+  if (!key) return 'sk-****';
+  const suffix = key.length >= 4 ? key.slice(-4) : key;
+  return `sk-****${suffix}`;
 }
