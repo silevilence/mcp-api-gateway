@@ -9,6 +9,9 @@ import { z } from 'zod';
 import type { Request, Response } from 'express';
 import * as nodeService from './nodeService.js';
 import { execute as sandboxExecute } from './sandboxService.js';
+import { handleVision } from './visionService.js';
+import type { VisionRequest } from './visionService.js';
+import type { VisionCapability } from '../../shared/types.js';
 
 // ---- 类型 ----
 interface SessionEntry {
@@ -97,26 +100,59 @@ function createProjectServer(projectId: string, slug: string): McpServer {
     const toolName = node.slug!;
     const toolDesc = node.description || node.name;
 
-    if (Object.keys(shape).length > 0) {
-      server.tool(toolName, toolDesc, shape, async (args) => {
-        const response = await sandboxExecute(node.id, args as Record<string, unknown>);
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `[${response.statusCode}] ${response.responseTimeMs}ms\n\n${response.body}`,
-          }],
-        };
-      });
+    // vision 类型节点 → 使用 visionService 执行
+    if (node.source === 'vision') {
+      const visionTool = node.slug as VisionCapability;
+      if (Object.keys(shape).length > 0) {
+        server.tool(toolName, toolDesc, shape, async (args) => {
+          const params: VisionRequest = {
+            tool: visionTool,
+            ...args as Record<string, unknown>,
+          };
+          // 注入节点绑定的模型 ID
+          if (node.boundModelId) {
+            params.modelId = node.boundModelId;
+          }
+          const result = await handleVision(params);
+          return {
+            content: [{ type: 'text' as const, text: result.text }],
+          };
+        });
+      } else {
+        server.tool(toolName, toolDesc, {}, async () => {
+          const params: VisionRequest = { tool: visionTool };
+          if (node.boundModelId) {
+            params.modelId = node.boundModelId;
+          }
+          const result = await handleVision(params);
+          return {
+            content: [{ type: 'text' as const, text: result.text }],
+          };
+        });
+      }
     } else {
-      server.tool(toolName, toolDesc, {}, async () => {
-        const response = await sandboxExecute(node.id, {});
-        return {
-          content: [{
-            type: 'text' as const,
-            text: `[${response.statusCode}] ${response.responseTimeMs}ms\n\n${response.body}`,
-          }],
-        };
-      });
+      // 原有 HTTP 沙箱执行路径
+      if (Object.keys(shape).length > 0) {
+        server.tool(toolName, toolDesc, shape, async (args) => {
+          const response = await sandboxExecute(node.id, args as Record<string, unknown>);
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `[${response.statusCode}] ${response.responseTimeMs}ms\n\n${response.body}`,
+            }],
+          };
+        });
+      } else {
+        server.tool(toolName, toolDesc, {}, async () => {
+          const response = await sandboxExecute(node.id, {});
+          return {
+            content: [{
+              type: 'text' as const,
+              text: `[${response.statusCode}] ${response.responseTimeMs}ms\n\n${response.body}`,
+            }],
+          };
+        });
+      }
     }
   }
 

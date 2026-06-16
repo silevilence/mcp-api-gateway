@@ -249,6 +249,8 @@ export interface ApiNode {
   slug?: string;
   /** 是否注册为 MCP Tool，默认 false */
   mcpToolEnabled?: boolean;
+  /** 绑定的 AI 模型 ID（vision 类型专用），用于工具级模型路由 */
+  boundModelId?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -415,5 +417,33 @@ export function createFileSystemNodeTemplate(
     source: 'filesystem',
     slug: cap.id,
     mcpToolEnabled: true,
+  };
+}
+
+/** 从视觉能力元数据生成 ApiNode 模板（用于预设节点） */
+export function createVisionNodeTemplate(
+  cap: VisionCapabilityMeta,
+  projectId: string,
+): Omit<ApiNode, 'id' | 'createdAt' | 'updatedAt'> {
+  return {
+    projectId,
+    name: cap.name,
+    description: cap.description,
+    method: 'POST',
+    path: `/api/vision/${cap.id}`,
+    params: cap.params.map((p) => ({
+      key: p.key,
+      type: p.type === 'number' ? 'number' : p.type === 'boolean' ? 'boolean' : 'string' as ParamType,
+      required: p.required,
+      description: p.description,
+      location: 'body' as ParamLocation,
+    })),
+    hidden: false,
+    group: '视觉智能',
+    source: 'vision' as NodeSource,
+    slug: cap.id,
+    mcpToolEnabled: true,
+    /** 视觉工具绑定的模型 ID（引用 AiModel.id），默认自动选取首个视觉模型 */
+    boundModelId: undefined,
   };
 }

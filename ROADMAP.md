@@ -2,7 +2,73 @@
 
 ## 📅 计划中
 
+- [ ] **Docker 容器化部署支持**
+    - [ ] **多阶段构建与制品编译 (Multi-stage Build)**
+        - [ ] **前端资产编译阶段**：基于 Node.js 生产环境镜像，执行前端 (Web SPA) 的依赖安装与静态资源构建，输出优化后的 Production Ready 静态制品。
+        - [ ] **后端服务编译阶段**：执行服务端 (Server) 的依赖安装，通过 TypeScript 编译器 (tsc) 将源码编译为高执行效率的 ESM 目标代码。
+    - [ ] **单镜像运行态收敛 (Static hosting & Unified Entry)**
+        - [ ] 将前端编译产物 (dist/public) 物理集成至后端 Express 服务的静态资源托管目录中。
+        - [ ] 容器运行时仅暴露单个业务端口（默认 `3000`），承载 SPA 路由分发、`/internal` 内部管理接口、`/api` 对外数据接口以及 `/api/mcp` 端点服务。
+
+- [ ] **NPM 发布与本端免部署运行支持 (NPX Engine)**
+    - [ ] **零配置免安装执行器开发 (CLI Bootstrapper)**
+        - [ ] 构建专用的全局命令行工具（支持通过 `npx` 管道即时免安装运行）。
+        - [ ] 支持通过命令行入参（例如 `--config <path>`）载入标准 JSON 格式的网关配置文件。
+        - [ ] 依据载入的配置文件，自动实例化底层的路由总线并动态拉起相应的 MCP Server 实例。
+    - [ ] **图形化配置透出与多拓扑导出引擎 (Profile Export Utility)**
+        - [ ] **全栈系统配置导出组件**：在前端管理后台中集成配置快照导出（JSON Schema 级联校验）能力。
+        - [ ] **按需按域导出机制**：支持用户选择性勾选特定 API 项目集进行打包导出（自动执行前置校验，剔除未激活 MCP 能力的非必要项目）。
+        - [ ] **多环境存储策略适配 (Storage Layer Sandbox)**：
+            - **临时沙箱模式 (Ephemeral Mode)**：在系统临时目录 (OS Temp Directory) 中创建隔离的、生命周期随进程销毁的临时数据根目录。
+            - **持久化沙箱模式 (Persistent Local Mode)**：采用符合主流操作系统规范的应用数据存储路径（例如：Windows 的 `%LOCALAPPDATA%/Silevilence/mcp-api-gateway`，Linux/macOS 的 `~/.local/share` 或 `~/.config` 等）。
+        - [ ] **自闭环元数据标准设计 (Metadata Schema Validation)**：
+            - **系统级基础配置 (Global Settings)**：包含运行时监听端口、并发水位、日志存储策略等全局环境变量。
+            - **多模态大模型凭证池 (LLM Provider Directory)**：提取已被引用的 AI 模型元数据，生成具备系统全局唯一性标识 (UUID/Hash-ID) 的配置节，供下游工具实例进行声明式关联绑定。
+            - **项目级接口协议树 (API Gateway Profiles)**：涵盖 API 项目集结构、路由映射关系、入参转换Schema以及 MCP Tool 的行为元数据。
+            - **运行态自校验**：确保导出的配置文件具备自闭环特性，`npx` 工具链在没有任何第三方外部依赖、仅持有此配置文件的状态下，可完全复现预期的网关及 MCP 路由拓扑。
+
 ## 🚧 开发中
+
+- [ ] **多模态智能感知与视觉理解引擎集成**
+    - [ ] 资产接入与底层服务配置
+        - [ ] 新增“图像理解 (Vision Intelligence)” API 集类型选项
+        - [ ] 集成统一大模型接入层 `ai-sdk`，实现异构模型供应商接口的高效适配与兼容
+        - [ ] 建立全局基础设置空间 (Settings Page)（作为后续系统级配置的统一承载入口）
+            - [ ] 供应商网关配置：支持配置异构通道（OpenAI Chat / Google Gemini / Anthropic Claude / Ollama），支持 BaseURL、APIKey 的配置与校验
+            - [ ] 模型资产清单管理：支持单一供应商下多模型的级联注册与维护
+            - [ ] 接入模型发现机制：支持基于供应商接口动态拉取模型列表（服务发现）或手动输入指定 Model ID
+            - [ ] 模型物理特征标定：支持显式声明模型的核心能力画像（是否支持思维链/思考、是否支持多模态/视觉能力）
+    - [ ] 多模态原子能力构建 (Core Vision Tools)
+        - [ ] **前置公共规约与安全边界**：
+            - 所有原子接口必须前置参数 schema 校验及边界防错机制。
+            - **标准入参协议定义（如无特别声明，默认包含此结构）**：
+                1. image (File/Buffer)：主分析目标图像
+                2. prompt (string, Optional)：自定义提示词（缺省时注入场景默认提示词，用于精细化引导理解重点及输出约束）
+                3. stream (boolean, Optional)：是否启用流式响应（默认：false）
+            - **标准出参协议定义（如无特别声明，默认包含此结构）**：
+                1. text (string)：模型推理输出的结构化文本
+        - [ ] **ui_to_artifact (UI 视觉资产还原)**
+            - **功能定义**：将 UI 视觉资源深度转化为前端代码、高保真提示词、系统级设计规范或多维自然语言描述，覆盖从设计稿到生产力落地的全生命周期。
+            - **扩展入参**：
+                1. type* (enum: Code | Prompt | Spec | Description)：目标产物生成策略
+        - [ ] **ocr (智能文本提取)**
+            - **功能定义**：基于大模型多模态视觉感知能力，提取并识别输入图像中的结构化文本信息，支持多语言与复杂布局排版。
+        - [ ] **ui_diff_check (UI 视觉一致性稽查)**
+            - **功能定义**：对比基准图与对比图之间的像素级、布局级差异，输出视觉偏差与缺陷报告，专注于 UI 质量保障 (QA) 与还原度验证。
+            - **入参重构**（覆盖标准输入）：
+                1. base_image* (File/Buffer)：设计基准图（必填，替代标准 image 字段）
+                2. compare_image* (File/Buffer)：实现对比图（必填）
+                3. prompt (string, Optional) & stream (boolean, Optional)
+        - [ ] **image_analysis (通用图像解构)**
+            - **功能定义**：泛化多模态图像感知能力，处理并解析非特定垂直场景下的日常通用视觉内容与复杂语境。
+        - [ ] **video_analysis (视频动态场景分析)**
+            - **功能定义**：支持 MP4/MOV/M4V 等主流格式（限制本地文件体积 ≤ 8MB）的视频解析，实现关键帧抽取、动态事件捕获与核心要点生成。
+            - **入参重构**（覆盖标准输入）：
+                1. video_file* (File/Buffer)：视频文件载荷（必填，无标准 image 输入）
+                2. prompt (string, Optional) & stream (boolean, Optional)
+    - [ ] 模型路由与多端透出
+        - [ ] 动态模型路由分发：每个工具接口均支持按需绑定具体的执行模型（前置条件：该模型必须具有“支持视觉”特征）
+        - [ ] 动态 MCP 注册映射：根据当前配置，将已激活的多模态原子接口无缝映射并暴露为标准的 MCP Tools 服务端点
 
 ## ✅ 已完成
 

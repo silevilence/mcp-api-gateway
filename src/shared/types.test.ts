@@ -2,7 +2,7 @@
 // 共享类型 · 结构校验测试
 // ============================================================
 import { describe, it, expect } from 'vitest';
-import { VISION_CAPABILITIES, type VisionCapability } from './types.js';
+import { VISION_CAPABILITIES, FILE_SYSTEM_CAPABILITIES, createVisionNodeTemplate, createFileSystemNodeTemplate, type VisionCapability } from './types.js';
 import type { ApiResponse, ApiProject, ApiNode, AiProvider, AiModel, GlobalSettings, ProviderType } from './types.js';
 
 describe('共享类型契约', () => {
@@ -173,5 +173,55 @@ describe('AI 供应商与模型类型', () => {
     };
     expect(Array.isArray(settings.providers)).toBe(true);
     expect(Array.isArray(settings.models)).toBe(true);
+  });
+});
+
+describe('createVisionNodeTemplate', () => {
+  it('应为每个视觉能力生成正确的 ApiNode 模板', () => {
+    const cap = VISION_CAPABILITIES[0];
+    const template = createVisionNodeTemplate(cap, 'test-project-id');
+
+    expect(template.projectId).toBe('test-project-id');
+    expect(template.name).toBe(cap.name);
+    expect(template.description).toBe(cap.description);
+    expect(template.method).toBe('POST');
+    expect(template.path).toBe(`/api/vision/${cap.id}`);
+    expect(template.source).toBe('vision');
+    expect(template.slug).toBe(cap.id);
+    expect(template.mcpToolEnabled).toBe(true);
+    expect(template.group).toBe('视觉智能');
+    expect(template.params.length).toBe(cap.params.length);
+  });
+
+  it('参数应正确映射类型', () => {
+    // ui_to_artifact has a 'stream' boolean param
+    const cap = VISION_CAPABILITIES.find(c => c.id === 'ui_to_artifact')!;
+    const template = createVisionNodeTemplate(cap, 'p1');
+
+    const streamParam = template.params.find(p => p.key === 'stream');
+    expect(streamParam).toBeDefined();
+    expect(streamParam!.type).toBe('boolean');
+    expect(streamParam!.required).toBe(false);
+  });
+
+  it('5 个视觉能力都有对应的模板', () => {
+    for (const cap of VISION_CAPABILITIES) {
+      const template = createVisionNodeTemplate(cap, 'p1');
+      expect(template.slug).toBe(cap.id);
+      expect(template.source).toBe('vision');
+    }
+  });
+});
+
+describe('createFileSystemNodeTemplate', () => {
+  it('vision 模板应比 filesystem 模板多 boundModelId 字段', () => {
+    const fsCap = FILE_SYSTEM_CAPABILITIES[0];
+    const visionCap = VISION_CAPABILITIES[0];
+
+    const fsKeys = Object.keys(createFileSystemNodeTemplate(fsCap, 'p1')).sort();
+    const visionKeys = Object.keys(createVisionNodeTemplate(visionCap, 'p1')).sort();
+
+    // vision 模板多 boundModelId
+    expect(visionKeys).toEqual([...fsKeys, 'boundModelId'].sort());
   });
 });
