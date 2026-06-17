@@ -1,5 +1,12 @@
 # Change Log
 
+## V0.2.2
+
+### 🐛 Bug 修复
+
+- **修复 CI 覆盖率失败**：添加缺失的 `@vitest/coverage-v8` 依赖，调整覆盖率排除规则与阈值
+- **修复 Docker 镜像构建失败**：添加 `setup-buildx-action` 初始化 Buildx 驱动以支持 GHA 缓存导出
+
 ## V0.2.1
 
 ### ✨ 新功能
