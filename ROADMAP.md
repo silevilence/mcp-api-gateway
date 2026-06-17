@@ -21,27 +21,19 @@
 
 ## 🚧 开发中
 
-- [ ] **Docker 容器化部署支持**
-    - [ ] **多阶段构建与制品编译 (Multi-stage Build)**
-        - [ ] **前端资产编译阶段**：基于 Node.js 生产环境镜像，执行前端 (Web SPA) 的依赖安装与静态资源构建，输出优化后的 Production Ready 静态制品。
-        - [ ] **后端服务编译阶段**：执行服务端 (Server) 的依赖安装，通过 TypeScript 编译器 (tsc) 将源码编译为高执行效率的 ESM 目标代码。
-    - [ ] **单镜像运行态收敛 (Static hosting & Unified Entry)**
-        - [ ] 将前端编译产物 (dist/public) 物理集成至后端 Express 服务的静态资源托管目录中。
-        - [ ] 容器运行时仅暴露单个业务端口（默认 `3000`），承载 SPA 路由分发、`/internal` 内部管理接口、`/api` 对外数据接口以及 `/api/mcp` 端点服务。
-
-- [ ] **GitHub Actions CI/CD 自动化集成**
-    - [ ] **基于语义化版本标签（Semantic Versioning Tag）的流水线触发机制**
-        - [ ] 当检测到符合特定规则（如 `v*.*.*`）的版本号 Tag 推送时，自动激活 GitHub Actions 工作流
-    - [ ] **构建、验证与多渠道分发核心指标及约束**
-        - [ ] **流水线前置熔断与快速失败机制（Fail-Fast）**
+- [x] **GitHub Actions CI/CD 自动化集成**
+    - [x] **基于语义化版本标签（Semantic Versioning Tag）的流水线触发机制**
+        - [x] 当检测到符合特定规则（如 `v*.*.*`）的版本号 Tag 推送时，自动激活 GitHub Actions 工作流
+    - [x] **构建、验证与多渠道分发核心指标及约束**
+        - [x] **流水线前置熔断与快速失败机制（Fail-Fast）**
             - 优先执行静态代码分析、类型断言与单元测试等前置检查，确保任何质量红线缺陷能触发流水线即时中止（Fail-Fast）
-        - [ ] **变更日志（Changelog）自动提取与元数据解析**
+        - [x] **变更日志（Changelog）自动提取与元数据解析**
             - 自动解析并提取 `CHANGELOG.md` 中对应当前版本节点的更新日志内容，作为后续发布的描述源数据
-        - [ ] **基于 Multi-stage Dockerfile 的镜像构建与分发**
+        - [x] **基于 Multi-stage Dockerfile 的镜像构建与分发**
             - 驱动 Docker 引擎进行容器化镜像构建，并将编译完成的生产级镜像安全推送至 GitHub Container Registry（`ghcr.io`）
         - [ ] **NPM 包自动化构建、合规校验与持续发布（CD）**
             - 将 npx 专有执行器及配套依赖打包并发布至 NPM 官方仓库；发布时自动映射并同步项目根目录下的 `README.md` 作为 NPM 包的主页说明文档
-        - [ ] **GitHub Release 自动创建与资产托管**
+        - [x] **GitHub Release 自动创建与资产托管**
             - 在 GitHub 仓库中自动创建对应版本的 Release 归档，自动装载提取的更新日志，并挂载相应的发布制品（Artifacts）
 
 ## ✅ 已完成
@@ -223,3 +215,11 @@
             - [x] 实现前端多媒体元数据校验，严格控制文件扩展名（MIME-Type）与单文件大小上限，统一将资产编译编码为 Base64 DataURL 格式输出。
         - [x] **视频参数输入适配组件开发**
             - [x] 复用图片输入组件的架构设计与事件监听逻辑，实现同等标准的多源（URL/本地导入/剪贴板粘贴）视频资源解析与 Base64 格式化输出。
+
+- [x] **Docker 容器化部署支持**
+    - [x] **多阶段构建与制品编译 (Multi-stage Build)**
+        - [x] **前端资产编译阶段**：基于 Node.js 生产环境镜像，执行前端 (Web SPA) 的依赖安装与静态资源构建，输出优化后的 Production Ready 静态制品。
+        - [x] **后端服务编译阶段**：执行服务端 (Server) 的依赖安装，通过 TypeScript 编译器 (tsc) 将源码编译为高执行效率的 ESM 目标代码。
+    - [x] **单镜像运行态收敛 (Static hosting & Unified Entry)**
+        - [x] 将前端编译产物 (dist/public) 物理集成至后端 Express 服务的静态资源托管目录中。
+        - [x] 容器运行时仅暴露单个业务端口（默认 `3000`），承载 SPA 路由分发、`/internal` 内部管理接口、`/api` 对外数据接口以及 `/api/mcp` 端点服务。

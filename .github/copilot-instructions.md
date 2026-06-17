@@ -36,8 +36,15 @@
 │  │  visionService → 多模态推理                   │
 │  │  fileSystemService → 文件原子能力              │
 │  │  auditService → 审计日志 + 7天轮转            │
-│  │  sandboxService → HTTP 请求引擎               │
+│  │  sandboxService → HTTP 请求引擎 + MCP 复用   │
 │  └───────────────────────────────────────────────┘
+└──────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────┐
+│          DevOps / 部署                             │
+│  Dockerfile (Multi-stage Alpine)                  │
+│  .github/workflows/release.yml (CI/CD 流水线)    │
+│  触发条件: git tag v*.*.* / V*.*.*               │
 └──────────────────────────────────────────────────┘
 ```
 
@@ -67,6 +74,7 @@
 | AI SDK | ai + @ai-sdk/openai / google / anthropic | ^6 / ^3 |
 | 数据校验 | Zod | ^4 |
 | TypeScript 执行 | tsx | ^4 (非 tsc，dev 模式下直接运行 .ts) |
+| 文件系统 | fast-glob | ^3.3 (Glob 匹配引擎) |
 
 **硬约束**:
 - 禁止降级 `@modelcontextprotocol/sdk` 低于 1.29 — Streamable HTTP 需要此版本
@@ -122,7 +130,7 @@ mcp-api-gateway/
 │   │       ├── openapiParser.ts        # OpenAPI 规范解析器
 │   │       ├── slugService.ts          # Slug 生成与唯一性校验
 │   │       └── projectMcpService.ts    # 项目级 MCP 工具工厂
-│   ├── web/                            # 【前端】React SPA
+│   ├── web/                            # 【前端】React SPA (React 19)
 │   │   ├── index.html                  # HTML 入口
 │   │   ├── main.tsx                    # React 入口注入
 │   │   ├── App.tsx                     # 根组件：侧边栏导航 + 视图切换
@@ -133,6 +141,7 @@ mcp-api-gateway/
 │   │   │   ├── ConfirmDialog.tsx       # 确认弹窗
 │   │   │   ├── FieldHint.tsx           # 字段提示
 │   │   │   ├── JsonViewer.tsx          # JSON 查看器
+│   │   │   ├── MediaInput.tsx          # 多模态媒体输入（URL/文件/剪贴板）
 │   │   │   ├── NodeForm.tsx            # 节点编辑表单
 │   │   │   ├── OpenApiImport.tsx       # OpenAPI 导入面板
 │   │   │   ├── ParamEditor.tsx         # 参数编辑器
@@ -154,6 +163,11 @@ mcp-api-gateway/
 │   ├── nodes.json
 │   ├── settings.json
 │   └── .encryption-key
+├── .github/
+│   └── workflows/
+│       └── release.yml                 # CI/CD 发布流水线（Tag 触发）
+├── Dockerfile                          # 多阶段 Docker 构建
+├── .dockerignore                       # Docker 构建上下文排除规则
 ├── docs/superpowers/                   # 设计文档
 ├── package.json
 ├── tsconfig.json
@@ -211,11 +225,19 @@ mcp-api-gateway/
 - `filesystem`: 提供文件系统原子能力
 - `vision`: 提供多模态视觉 AI 能力
 
-### 4.7 已知陷阱
+### 4.7 DevOps / 部署
+
+- **Docker**: 使用 Multi-stage 构建（Alpine base），三个阶段：前端编译(Vite) → 后端编译(tsc) → 运行镜像（仅安装生产依赖）。
+- **Docker 健康检查**: 通过 `GET /internal/health` 端点，间隔 30s，失败 3 次标记为 Unhealthy。
+- **CI/CD**: GitHub Actions 流水线 `release.yml`，触发条件为推送 `v*.*.*` 或 `V*.*.*` 标签。
+- **流水线阶段**: TypeScript 类型检查 → 单元测试+覆盖率 → 完整构建 → Docker 镜像构建并推送至 ghcr.io → 创建 GitHub Release。
+
+### 4.8 已知陷阱
 
 - **ESM 路径**: 所有本地 `import` 必须包含 `.js` 扩展名（如 `'./services/store.js'`），TypeScript 编译时自动处理。
 - **tsx 执行**: 开发模式使用 `tsx` 直接运行 TypeScript，不使用 `tsc` 编译。
 - **Vite proxy**: 前端开发服务器 `:5173` 代理 `/internal` 和 `/api` 到 `:3000`。
+- **Express body 限制**: 全局 `express.json({ limit: '16mb' })`，适配 Base64 编码的图片/视频上传。
 - **Settings API 密钥**: 返回时自动掩码（显示前 8 位 + `****`），解密需调用 `getDecryptedApiKey()`。
 - **双向绑定**: `boundModelId` 字段在节点层和服务层均需传递，内部路由和外部 API 路由需同步更新。
 
@@ -317,7 +339,7 @@ try { await riskyOperation(); } catch (err) { ... }
 
 - 测试框架: **Vitest** (v3)，配置在 `vitest.config.ts`。
 - 全局模式: `globals: true`（无需显式导入 describe/it/expect）。
-- 环境: `node`（非 jsdom）。
+- 默认环境: `node`（非 jsdom）；React 组件测试文件需在文件首行标注 `// @vitest-environment jsdom`（如 `MediaInput.test.tsx`）。
 - 文件匹配: `src/**/*.test.ts` 和 `src/**/*.test.tsx`。
 
 ### 7.3 覆盖率目标
@@ -390,7 +412,11 @@ npm run test:coverage # 覆盖率报告
 | 新增共享类型 | 在 `src/shared/types.ts` 添加 `interface`/`type` → 两端分别 import |
 | 修改数据模型 | 同步更新 `store.ts` 的 Map 操作 + `persistence.ts` 的 flush → 确保 `scheduleFlush()` 被调用 |
 
-### 9.2 数据流检查清单
+### 9.2 新增组件注意事项
+
+- **MediaInput 组件** 用于多模态媒体输入，支持 URL/文件/剪贴板三种模式。该组件接收 `accept` 属性（`'image/*' | 'video/*'`）限定文件类型，`value`/`onChange` 受控。使用 `MIME_WHITELIST` 进行文件类型校验。React 组件测试使用 `// @vitest-environment jsdom` 文件头标注。
+
+### 9.3 数据流检查清单
 
 修改涉及数据持久化时，确认:
 1. ✅ 写操作调用了 `scheduleFlush()`
@@ -399,7 +425,7 @@ npm run test:coverage # 覆盖率报告
 4. ✅ 共享类型在 `types.ts` 中定义
 5. ✅ 内部路由 (`/internal`) 和外部路由 (`/api`) 都更新了
 
-### 9.3 新增文件注意事项
+### 9.4 新增文件注意事项
 
 - ESM 必须加 `.js` 扩展名（如 `import { ... } from './foo.js'`）
 - 测试文件与源文件同目录，命名 `<name>.test.ts`
