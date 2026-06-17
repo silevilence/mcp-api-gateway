@@ -28,6 +28,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 # 复制编译产物
 COPY --from=server-build /build/dist/server/ ./server/
+COPY --from=server-build /build/dist/shared/ ./shared/
 COPY --from=web-build   /build/public/        ./public/
 
 ENV NODE_ENV=production

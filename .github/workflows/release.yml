@@ -134,7 +134,28 @@ jobs:
             ${{ steps.docker_meta.outputs.image }}:${{ github.ref_name }}
             ${{ steps.docker_meta.outputs.image }}:${{ steps.docker_meta.outputs.version }}
 
-      # ---- 12. 创建 GitHub Release（复用提取的 changelog 文件）----
+      # ---- 12. 验证 Docker 镜像健康检查 ----
+      - name: Verify Docker image health
+        run: |
+          docker run -d --name test-gateway -p 3000:3000 \
+            ${{ steps.docker_meta.outputs.image }}:${{ steps.docker_meta.outputs.version }}
+          # 等待服务启动（最多重试 10 次）
+          for i in $(seq 1 10); do
+            sleep 3
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/internal/health 2>/dev/null || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "✅ 健康检查通过 (HTTP 200)"
+              docker stop test-gateway && docker rm test-gateway
+              exit 0
+            fi
+            echo "⏳ 等待启动... ($i/10, 状态=$STATUS)"
+          done
+          echo "❌ 健康检查失败"
+          docker logs test-gateway 2>&1 || true
+          docker stop test-gateway && docker rm test-gateway
+          exit 1
+
+      # ---- 13. 创建 GitHub Release（复用提取的 changelog 文件）----
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
