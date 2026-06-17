@@ -10,12 +10,20 @@ import type { AiProvider, AiModel, GlobalSettings } from '../../shared/types.js'
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const DATA_DIR = join(__dirname, '..', '..', '..', '.data');
-const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
-const KEY_FILE = join(DATA_DIR, '.encryption-key');
+let DATA_DIR = join(__dirname, '..', '..', '..', '.data');
+let SETTINGS_FILE = join(DATA_DIR, 'settings.json');
+let KEY_FILE = join(DATA_DIR, '.encryption-key');
 
 let settings: GlobalSettings = { providers: [], models: [] };
 let _encryptionKey: Buffer | null = null;
+
+/** 设置自定义数据目录（用于测试隔离） */
+export function setDataDir(dir: string): void {
+  DATA_DIR = dir;
+  SETTINGS_FILE = join(DATA_DIR, 'settings.json');
+  KEY_FILE = join(DATA_DIR, '.encryption-key');
+  _encryptionKey = null; // 密钥文件路径可能已变
+}
 
 const ALGORITHM = 'aes-256-gcm';
 

@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { AiGatewayError, resolveClient, clearClientCache, listProviderModels } from './aiGatewayService.js';
-import { initSettings, updateSettings } from './settingsStore.js';
+import { initSettings, updateSettings, setDataDir } from './settingsStore.js';
 import type { AiProvider, AiModel } from '../../shared/types.js';
+
+let testDataDir: string;
 
 // Mock AI SDK modules
 vi.mock('@ai-sdk/openai', () => ({
@@ -49,6 +54,15 @@ function makeModel(overrides: Partial<AiModel> = {}): AiModel {
     ...overrides,
   };
 }
+
+beforeAll(() => {
+  testDataDir = mkdtempSync(join(tmpdir(), 'mcp-api-gateway-test-'));
+  setDataDir(testDataDir);
+});
+
+afterAll(() => {
+  rmSync(testDataDir, { recursive: true, force: true });
+});
 
 describe('aiGatewayService', () => {
   beforeEach(async () => {

@@ -7,6 +7,7 @@ import { layout } from '../styles.js';
 import { VISION_CAPABILITIES, createVisionNodeTemplate } from '@shared/types.js';
 import { nodesApi } from '../apiClient.js';
 import { useToast } from '../components/Toast.js';
+import { MediaInput } from '../components/MediaInput.js';
 import type { ApiNode, ApiProject, AiModel, VisionCapabilityMeta } from '@shared/types.js';
 
 interface VisionPageProps {
@@ -314,12 +315,11 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
               {/* Image input (ocr, image_analysis, ui_to_artifact) */}
               {debuggingCap.params.some((p) => p.key === 'image') && (
                 <div style={layout.formGroup}>
-                  <label style={layout.label}>图像 (Base64 data URL 或 HTTP URL)</label>
-                  <textarea
-                    style={{ ...layout.textarea, fontFamily: 'var(--font-mono)', fontSize: 12, minHeight: 60 }}
+                  <label style={layout.label}>图像</label>
+                  <MediaInput
+                    accept="image/*"
                     value={debugForm.image}
-                    onChange={(e) => setDebugForm((prev) => ({ ...prev, image: e.target.value }))}
-                    placeholder="data:image/png;base64,... 或 https://example.com/image.png"
+                    onChange={(v) => setDebugForm((prev) => ({ ...prev, image: v }))}
                   />
                 </div>
               )}
@@ -328,20 +328,18 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
                 <>
                   <div style={layout.formGroup}>
                     <label style={layout.label}>基准图 (baseImage)</label>
-                    <textarea
-                      style={{ ...layout.textarea, fontFamily: 'var(--font-mono)', fontSize: 12, minHeight: 60 }}
+                    <MediaInput
+                      accept="image/*"
                       value={debugForm.baseImage}
-                      onChange={(e) => setDebugForm((prev) => ({ ...prev, baseImage: e.target.value }))}
-                      placeholder="data:image/png;base64,..."
+                      onChange={(v) => setDebugForm((prev) => ({ ...prev, baseImage: v }))}
                     />
                   </div>
                   <div style={layout.formGroup}>
                     <label style={layout.label}>对比图 (compareImage)</label>
-                    <textarea
-                      style={{ ...layout.textarea, fontFamily: 'var(--font-mono)', fontSize: 12, minHeight: 60 }}
+                    <MediaInput
+                      accept="image/*"
                       value={debugForm.compareImage}
-                      onChange={(e) => setDebugForm((prev) => ({ ...prev, compareImage: e.target.value }))}
-                      placeholder="data:image/png;base64,..."
+                      onChange={(v) => setDebugForm((prev) => ({ ...prev, compareImage: v }))}
                     />
                   </div>
                 </>
@@ -349,12 +347,12 @@ export const VisionPage: React.FC<VisionPageProps> = ({ project, onBack }) => {
               {/* videoFile (video_analysis) */}
               {debuggingCap.id === 'video_analysis' && (
                 <div style={layout.formGroup}>
-                  <label style={layout.label}>视频文件 (Base64 data URL 或 HTTP URL)</label>
-                  <textarea
-                    style={{ ...layout.textarea, fontFamily: 'var(--font-mono)', fontSize: 12, minHeight: 60 }}
+                  <label style={layout.label}>视频文件</label>
+                  <MediaInput
+                    accept="video/*"
+                    maxSizeMB={8}
                     value={debugForm.videoFile}
-                    onChange={(e) => setDebugForm((prev) => ({ ...prev, videoFile: e.target.value }))}
-                    placeholder="https://example.com/video.mp4"
+                    onChange={(v) => setDebugForm((prev) => ({ ...prev, videoFile: v }))}
                   />
                 </div>
               )}

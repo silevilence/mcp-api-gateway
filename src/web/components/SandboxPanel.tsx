@@ -6,6 +6,7 @@ import { createPortal } from 'react-dom';
 import { layout } from '../styles.js';
 import { sandboxApi } from '../apiClient.js';
 import { JsonViewer } from './JsonViewer.js';
+import { MediaInput } from './MediaInput.js';
 import type { ApiNode, SandboxResponse } from '@shared/types.js';
 
 interface SandboxPanelProps {
@@ -148,7 +149,20 @@ export const SandboxPanel: React.FC<SandboxPanelProps> = ({ node, onClose }) => 
                     {param.required && <span style={{ color: 'var(--danger)' }}> *</span>}
                     <span style={{ color: 'var(--text-muted)', marginLeft: 6 }}>({param.location}{param.type ? `, ${param.type}` : ''})</span>
                   </label>
-                  {param.location === 'body' ? (
+                  {param.mediaType === 'image' ? (
+                    <MediaInput
+                      accept="image/*"
+                      value={paramValues[param.key] ?? ''}
+                      onChange={(v) => handleParamChange(param.key, v)}
+                    />
+                  ) : param.mediaType === 'video' ? (
+                    <MediaInput
+                      accept="video/*"
+                      maxSizeMB={8}
+                      value={paramValues[param.key] ?? ''}
+                      onChange={(v) => handleParamChange(param.key, v)}
+                    />
+                  ) : param.location === 'body' ? (
                     <textarea
                       style={{ ...layout.textarea, minHeight: 80, fontSize: 12, fontFamily: 'var(--font-mono)' }}
                       value={paramValues[param.key] ?? ''}

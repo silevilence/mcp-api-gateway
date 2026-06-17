@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll, vi } from 'vitest';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { handleVision, VisionError } from './visionService.js';
-import { initSettings, updateSettings } from './settingsStore.js';
+import { initSettings, updateSettings, setDataDir } from './settingsStore.js';
 import type { AiProvider, AiModel } from '../../shared/types.js';
+
+let testDataDir: string;
 
 // Mock AI SDK
 vi.mock('ai', () => ({
@@ -41,6 +46,15 @@ function makeModel(overrides: Partial<AiModel> = {}): AiModel {
 }
 
 const MOCK_IMAGE = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+beforeAll(() => {
+  testDataDir = mkdtempSync(join(tmpdir(), 'mcp-api-gateway-test-'));
+  setDataDir(testDataDir);
+});
+
+afterAll(() => {
+  rmSync(testDataDir, { recursive: true, force: true });
+});
 
 describe('visionService', () => {
   beforeEach(async () => {

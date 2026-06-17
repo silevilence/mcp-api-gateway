@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { existsSync, unlinkSync, mkdirSync, writeFileSync } from 'node:fs';
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
+import { existsSync, unlinkSync, mkdirSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import {
   initSettings,
   getSettings,
@@ -9,23 +10,30 @@ import {
   getModelsByProvider,
   getDecryptedApiKey,
   maskApiKey,
+  setDataDir,
 } from './settingsStore.js';
 import type { GlobalSettings } from '../../shared/types.js';
 
-const TEST_DATA_DIR = join(process.cwd(), '.data');
-const TEST_SETTINGS_FILE = join(TEST_DATA_DIR, 'settings.json');
+let testDataDir: string;
+let testSettingsFile: string;
 
-function cleanSettingsFile() {
-  if (existsSync(TEST_SETTINGS_FILE)) unlinkSync(TEST_SETTINGS_FILE);
-}
+beforeAll(() => {
+  testDataDir = mkdtempSync(join(tmpdir(), 'mcp-api-gateway-test-'));
+  testSettingsFile = join(testDataDir, 'settings.json');
+  setDataDir(testDataDir);
+});
+
+afterAll(() => {
+  rmSync(testDataDir, { recursive: true, force: true });
+});
 
 describe('settingsStore', () => {
   beforeEach(() => {
-    cleanSettingsFile();
+    if (existsSync(testSettingsFile)) unlinkSync(testSettingsFile);
   });
 
   afterEach(() => {
-    cleanSettingsFile();
+    if (existsSync(testSettingsFile)) unlinkSync(testSettingsFile);
   });
 
   describe('initSettings', () => {
@@ -58,9 +66,8 @@ describe('settingsStore', () => {
     });
 
     it('JSON 文件损坏时应降级为空配置', async () => {
-      const dir = join(process.cwd(), '.data');
-      if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-      writeFileSync(join(dir, 'settings.json'), '{ corrupted json!!!');
+      if (!existsSync(testSettingsFile)) mkdirSync(testDataDir, { recursive: true });
+      writeFileSync(testSettingsFile, '{ corrupted json!!!');
 
       await initSettings();
       const settings = getSettings();

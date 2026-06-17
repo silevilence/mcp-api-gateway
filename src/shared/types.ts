@@ -265,6 +265,8 @@ export interface ApiParam {
   /** 参数位置 */
   location: ParamLocation;
   defaultValue?: unknown;
+  /** 可选：标记该参数在调试界面使用媒体输入组件（'image' | 'video'），不影响后端逻辑 */
+  mediaType?: 'image' | 'video';
 }
 
 export type ParamType = 'string' | 'number' | 'integer' | 'boolean' | 'date' | 'object' | 'array';
