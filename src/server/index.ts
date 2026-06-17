@@ -55,6 +55,15 @@ app.use('/api/vision', visionRouter);
 // 项目级 MCP：动态路由 /api/:slug/mcp（必须在所有 /api/* 路由之后）
 app.use('/api/:slug/mcp', projectMcpRouter);
 
+// ---- 生产环境：托管前端 SPA 静态资源（在所有 API 路由之后注册）----
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('public'));
+  // SPA fallback：所有非 API 请求返回 index.html
+  app.get('*', (_req, res) => {
+    res.sendFile('index.html', { root: 'public' });
+  });
+}
+
 // ---- 全局错误处理 ----
 app.use(errorHandler);
 

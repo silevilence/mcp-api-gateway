@@ -1,0 +1,16 @@
+node_modules
+dist
+.data
+.git
+.github
+public
+coverage
+*.test.ts
+*.test.tsx
+*.md
+docs
+.env
+.env.*
+npm-debug.log
+Dockerfile
+docker-compose.yml

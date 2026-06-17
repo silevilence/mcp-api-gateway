@@ -1,0 +1,140 @@
+# ============================================================
+# mcp-api-gateway · CI/CD 发布流水线
+# 触发条件：推送 v/V*.*.* 语义化版本 Tag（大小写不敏感）
+# ============================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+      - 'V*.*.*'
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ---- 1. 检出代码 ----
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ---- 2. 设置 Node.js 22（启用 npm 缓存加速 CI）----
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # ---- 3. 安装依赖 ----
+      - name: Install dependencies
+        run: npm ci
+
+      # ============================================================
+      # ⚡ Fail-Fast 阶段：任一失败立即中止流水线
+      # ============================================================
+
+      # ---- 4. TypeScript 类型检查 ----
+      - name: Type check (Fail-Fast)
+        run: npm run build:check
+
+      # ---- 5. 单元测试 + 覆盖率 ----
+      - name: Unit tests with coverage (Fail-Fast)
+        run: npm run test:coverage
+
+      # ---- 6. 完整构建验证（确认前后端产物可正常生成）----
+      - name: Full build verification (Fail-Fast)
+        run: npm run build
+
+      # ============================================================
+      # 构建与分发阶段
+      # ============================================================
+
+      # ---- 7. 提取变更日志（大小写兼容）----
+      - name: Extract changelog
+        id: changelog
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          # 去除 v/V 前缀得到纯版本号
+          VERSION="${TAG#v}"
+          VERSION="${VERSION#V}"
+
+          # 大小写兼容提取：匹配 ## v0.1.0 / ## V0.1.0 / ## 0.1.0 / ## [v0.1.0] 等格式
+          awk -v tag="$TAG" -v version="$VERSION" '
+            BEGIN { found=0 }
+            /^##[[:space:]]+/ {
+              # 提取标题文本（去除 ## 前缀和方括号）
+              heading=$0
+              sub(/^##[[:space:]]+/, "", heading)
+              gsub(/^\[/, "", heading)
+              gsub(/\]$/, "", heading)
+
+              # 转小写后比较
+              lower=tolower(heading)
+              target1=tolower(tag)       # 如 "v0.1.0"
+              target2=tolower(version)   # 如 "0.1.0"
+
+              if (lower == target1 || lower == target2) {
+                found=1
+                next
+              }
+
+              if (found) exit
+            }
+            found { print }
+          ' CHANGELOG.md > release-notes.md
+
+          # 空内容检查：未匹配或无正文均中断
+          if [ ! -s release-notes.md ]; then
+            echo "❌ 未找到版本 ${TAG} 的变更日志或日志内容为空"
+            exit 1
+          fi
+
+          echo "✅ 已提取 ${TAG} 变更日志 ($(wc -l < release-notes.md) 行)"
+
+      # ---- 8. 准备 Docker 镜像元数据（统一小写）----
+      - name: Prepare Docker image metadata
+        id: docker_meta
+        run: |
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]')
+          # 重新计算 VERSION——GitHub Actions 每个 step 独立 shell，不能复用上一步的变量
+          VERSION="${GITHUB_REF_NAME#v}"
+          VERSION="${VERSION#V}"
+          echo "image=ghcr.io/${OWNER_LC}/${REPO_NAME}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      # ---- 9. 登录 GitHub Container Registry ----
+      - name: Login to ghcr.io
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # ---- 10. Docker 构建并推送（开启 GHA 缓存 + 多版本标签）----
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          tags: |
+            ${{ steps.docker_meta.outputs.image }}:latest
+            ${{ steps.docker_meta.outputs.image }}:${{ github.ref_name }}
+            ${{ steps.docker_meta.outputs.image }}:${{ steps.docker_meta.outputs.version }}
+
+      # ---- 11. 创建 GitHub Release（复用提取的 changelog 文件）----
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: false

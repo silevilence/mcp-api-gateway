@@ -2,14 +2,6 @@
 
 ## 📅 计划中
 
-- [ ] **Docker 容器化部署支持**
-    - [ ] **多阶段构建与制品编译 (Multi-stage Build)**
-        - [ ] **前端资产编译阶段**：基于 Node.js 生产环境镜像，执行前端 (Web SPA) 的依赖安装与静态资源构建，输出优化后的 Production Ready 静态制品。
-        - [ ] **后端服务编译阶段**：执行服务端 (Server) 的依赖安装，通过 TypeScript 编译器 (tsc) 将源码编译为高执行效率的 ESM 目标代码。
-    - [ ] **单镜像运行态收敛 (Static hosting & Unified Entry)**
-        - [ ] 将前端编译产物 (dist/public) 物理集成至后端 Express 服务的静态资源托管目录中。
-        - [ ] 容器运行时仅暴露单个业务端口（默认 `3000`），承载 SPA 路由分发、`/internal` 内部管理接口、`/api` 对外数据接口以及 `/api/mcp` 端点服务。
-
 - [ ] **NPM 发布与本端免部署运行支持 (NPX Engine)**
     - [ ] **零配置免安装执行器开发 (CLI Bootstrapper)**
         - [ ] 构建专用的全局命令行工具（支持通过 `npx` 管道即时免安装运行）。
@@ -27,6 +19,16 @@
             - **项目级接口协议树 (API Gateway Profiles)**：涵盖 API 项目集结构、路由映射关系、入参转换Schema以及 MCP Tool 的行为元数据。
             - **运行态自校验**：确保导出的配置文件具备自闭环特性，`npx` 工具链在没有任何第三方外部依赖、仅持有此配置文件的状态下，可完全复现预期的网关及 MCP 路由拓扑。
 
+## 🚧 开发中
+
+- [ ] **Docker 容器化部署支持**
+    - [ ] **多阶段构建与制品编译 (Multi-stage Build)**
+        - [ ] **前端资产编译阶段**：基于 Node.js 生产环境镜像，执行前端 (Web SPA) 的依赖安装与静态资源构建，输出优化后的 Production Ready 静态制品。
+        - [ ] **后端服务编译阶段**：执行服务端 (Server) 的依赖安装，通过 TypeScript 编译器 (tsc) 将源码编译为高执行效率的 ESM 目标代码。
+    - [ ] **单镜像运行态收敛 (Static hosting & Unified Entry)**
+        - [ ] 将前端编译产物 (dist/public) 物理集成至后端 Express 服务的静态资源托管目录中。
+        - [ ] 容器运行时仅暴露单个业务端口（默认 `3000`），承载 SPA 路由分发、`/internal` 内部管理接口、`/api` 对外数据接口以及 `/api/mcp` 端点服务。
+
 - [ ] **GitHub Actions CI/CD 自动化集成**
     - [ ] **基于语义化版本标签（Semantic Versioning Tag）的流水线触发机制**
         - [ ] 当检测到符合特定规则（如 `v*.*.*`）的版本号 Tag 推送时，自动激活 GitHub Actions 工作流
@@ -41,8 +43,6 @@
             - 将 npx 专有执行器及配套依赖打包并发布至 NPM 官方仓库；发布时自动映射并同步项目根目录下的 `README.md` 作为 NPM 包的主页说明文档
         - [ ] **GitHub Release 自动创建与资产托管**
             - 在 GitHub 仓库中自动创建对应版本的 Release 归档，自动装载提取的更新日志，并挂载相应的发布制品（Artifacts）
-
-## 🚧 开发中
 
 ## ✅ 已完成
 
